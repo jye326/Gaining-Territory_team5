@@ -4,15 +4,35 @@ from shapely.geometry import LineString, Point
 from shapely.geometry import Polygon
 
 class MACHINE():
-    # 생성자: MACHINE 객체 초기화
-    def __init__(self, score=[0, 0], drawn_lines=[], whole_points=[], location=[]):
-        self.score = score  # 플레이어의 점수
-        self.drawn_lines = drawn_lines  # 그려진 선분들
-        self.whole_points = whole_points  # 게임 보드의 모든 점
-        self.location = location  # 점의 위치
-        self.triangles = []  # 형성된 삼각형들
 
-    # 최적의 선분 선택
+    """
+        [ MACHINE ]
+        MinMax Algorithm을 통해 수를 선택하는 객체.
+        - 모든 Machine Turn마다 변수들이 업데이트 됨
+
+        ** To Do **
+        MinMax Algorithm을 이용하여 최적의 수를 찾는 알고리즘 생성
+           - class 내에 함수를 추가할 수 있음
+           - 최종 결과는 find_best_selection을 통해 Line 형태로 도출
+               * Line: [(x1, y1), (x2, y2)] -> MACHINE class에서는 x값이 작은 점이 항상 왼쪽에 위치할 필요는 없음 (System이 organize 함)
+    """
+    def __init__(self, score=[0, 0], drawn_lines=[], whole_lines=[], whole_points=[], location=[]):
+        self.id = "MACHINE"
+        self.score = [0, 0] # USER, MACHINE
+        self.drawn_lines = [] # Drawn Lines
+        self.board_size = 7 # 7 x 7 Matrix
+        self.num_dots = 0
+        self.whole_points = []
+        self.location = []
+        self.triangles = [] # [(a, b), (c, d), (e, f)]
+        
+        self.sim_drawnline = []  #  simulation시에 사용할 그려진 라인들
+        self.avail_lines_num = 0 #self.count_available() #처음에 하는거 의미 없는듯
+        self.sim_score = [0,0]  # 가상의 점수
+        self.sim_triangles = []
+        #print(self.avail_lines_num)
+        #222#
+        
     def find_best_selection(self):
         # 짝수 개의 삼각형 전략을 먼저 시도
         line = self.find_even_triangle_strategy()
