@@ -30,6 +30,7 @@ class MACHINE():
         self.sim_score = [0,0]  # 가상의 점수
         self.sim_triangles = []
         #print(self.avail_lines_num)
+        #222#
         
 
         
