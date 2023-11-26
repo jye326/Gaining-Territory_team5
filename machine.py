@@ -6,7 +6,7 @@ from shapely.geometry import Polygon
 class MACHINE():
 
     """
-        [ MACHINE ]
+        [ MACHINE ]..
         MinMax Algorithm을 통해 수를 선택하는 객체.
         - 모든 Machine Turn마다 변수들이 업데이트 됨
 
