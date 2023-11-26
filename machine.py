@@ -5,12 +5,22 @@ from shapely.geometry import Polygon
 
 class MACHINE():
     # 생성자: MACHINE 객체 초기화
-    def __init__(self, score=[0, 0], drawn_lines=[], whole_points=[], location=[]):
-        self.score = score  # 플레이어의 점수
-        self.drawn_lines = drawn_lines  # 그려진 선분들
-        self.whole_points = whole_points  # 게임 보드의 모든 점
-        self.location = location  # 점의 위치
-        self.triangles = []  # 형성된 삼각형들
+    def __init__(self, score=[0, 0], drawn_lines=[], whole_lines=[], whole_points=[], location=[]):
+        self.id = "MACHINE"
+        self.score = [0, 0] # USER, MACHINE
+        self.drawn_lines = [] # Drawn Lines
+        self.board_size = 7 # 7 x 7 Matrix
+        self.num_dots = 0
+        self.whole_points = []
+        self.location = []
+        self.triangles = [] # [(a, b), (c, d), (e, f)]
+        
+        self.sim_drawnline = []  #  simulation시에 사용할 그려진 라인들
+        self.avail_lines_num = 0 #self.count_available() #처음에 하는거 의미 없는듯
+        self.sim_score = [0,0]  # 가상의 점수
+        self.sim_triangles = []
+        #print(self.avail_lines_num)
+        #222
 
     # 최적의 선분 선택
     def find_best_selection(self):
