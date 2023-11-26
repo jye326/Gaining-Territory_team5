@@ -31,7 +31,6 @@ class MACHINE():
         self.sim_score = [0,0]  # 가상의 점수
         self.sim_triangles = []
         #print(self.avail_lines_num)
-        #222#
         
     def find_best_selection(self):
         # 짝수 개의 삼각형 전략을 먼저 시도
