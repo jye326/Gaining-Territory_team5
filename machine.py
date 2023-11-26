@@ -24,6 +24,7 @@ class MACHINE():
         self.whole_points = []
         self.location = []
         self.triangles = [] # [(a, b), (c, d), (e, f)]
+        
         '''
         trick 함수에 대한 설명 
         0) 다른 곳에 그어져서 trick이 깨졌는지 여부를 판단할 수 있는 장치 필요함
@@ -37,8 +38,20 @@ class MACHINE():
             - 일단 most_completed_trick 중에서 
             - 그리는 순서가 중요함. 앞의 3개의 점 먼저 그리기, 그 다음은 아무거나 상관 없음
         
+
         3) 나중에 일반화된 trick을 피하는 로직 필요함
         '''
+
+        self.sim_drawnline = []  #  simulation시에 사용할 그려진 라인들
+        self.avail_lines_num = 0 #self.count_available() #처음에 하는거 의미 없는듯
+        self.sim_score = [0,0]  # 가상의 점수
+        self.sim_triangles = []
+        #print(self.avail_lines_num)
+        #222#
+        
+
+        
+
     def find_best_selection(self):
         # Find available tricks
         avail_trick_point = self.find_trick()
@@ -181,7 +194,3 @@ class MACHINE():
             return True
         else:
             return False    
-
-    
-
-
