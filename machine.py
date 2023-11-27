@@ -5,7 +5,7 @@ from shapely.geometry import LineString, Point
 
 class MACHINE():
     """
-        [ MACHINE ]
+        [ MACHINE ]..
         MinMax Algorithm을 통해 수를 선택하는 객체.
         - 모든 Machine Turn마다 변수들이 업데이트 됨
 
@@ -122,8 +122,29 @@ class MACHINE():
         if condition1 and condition2 and condition3 and condition4:
             return True
         else:
-            return False    
+            return False 
 
+    # 주어진 점이 삼각형 내부에 있는지 확인
+    def is_point_inside_triangle(self, point, triangle):
+        triangle_polygon = Polygon(triangle)
+        return triangle_polygon.contains(Point(point))
+
+    # 삼각형을 완성했을 때 짝수 개의 삼각형을 유지할 수 있는지 확인
+    def can_form_even_number_of_triangles(self, triangle):
+        num_triangles = len(self.triangles) + 1  # 현재 삼각형 포함
+        return num_triangles % 2 == 0
+
+    # 짝수 균형을 유지할 수 있는 선분을 선택
+    def select_line_to_maintain_even_balance(self, triangle):
+        for line in combinations(triangle, 2):
+            if line not in self.drawn_lines and self.check_availability(line):
+                return line
+        return None
+
+    # 사용 가능한 모든 선분을 찾는 함수
+    def find_available_lines(self):
+        available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
+        return available
     
 # Minmax Tree Node
 class Node:
