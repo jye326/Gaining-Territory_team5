@@ -39,7 +39,15 @@ class MACHINE():
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         self.avail_lines_num = self.count_available()
         print(self.avail_lines_num)
-        return random.choice(available) #모든 가능한 선 중에 랜덤으로 한개의 선분 반환
+        drawn_lines = self.drawn_lines
+        # 이미 그어진 선분의 모든 좌표를 얻기
+        drawn_points = [point for line in drawn_lines for point in line]
+        # 이미 그어진 선분의 두 좌표를 제외하다
+        remaining_lines = [[point1, point2] for [point1, point2] in available if point1 not in drawn_points and point2 not in drawn_points]
+        if not remaining_lines:
+            return random.choice(available)#모든 가능한 선 중에 랜덤으로 한개의 선분 반환
+        else:
+            return random.choice(remaining_lines)
     
     #턴마다 system에서 machine의 변수들을 업데이트 해 주는 것임
 
