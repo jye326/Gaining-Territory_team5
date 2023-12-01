@@ -68,7 +68,7 @@ class MACHINE():
         drawn_lines = self.drawn_lines
         # 이미 그어진 선분의 모든 좌표를 얻기
         drawn_points = [point for line in drawn_lines for point in line]
-        # 이미 그어진 선분의 두 좌표를 제외하다
+        # 이미 연결점이 있는 선을 제외하고, 아무것도 연결하지 않은 선의 집합.
         remaining_lines = [[point1, point2] for [point1, point2] in available if point1 not in drawn_points and point2 not in drawn_points]
         # 1. Trick 과정
 
