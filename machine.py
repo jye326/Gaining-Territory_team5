@@ -35,33 +35,9 @@ class MACHINE():
         #222#
 
         self.drawn_lines_copy = copy.deepcopy(drawn_lines)
+        self.whole_points_copy = copy.deepcopy(self.whole_points)
+        #턴마다 system에서 machine의 변수들을 업데이트 해 주는 것임
         
-   
-    def find_triangle_completing_line(self):
-        """
-        삼각형을 완성하는 선분을 찾는 함수
-        """
-        for line in self.drawn_lines:
-            connected_lines = self.find_connected_lines(line)
-            for connected_line in connected_lines:
-                possible_triangle = self.form_triangle(line, connected_line)
-                if possible_triangle and self.is_triangle_empty(possible_triangle):
-                    completing_line = self.find_completing_line(possible_triangle)
-                    if completing_line:
-                        completing_line = [list(completing_line)]
-                        return completing_line
-        return None
-
-    def find_completing_line(self, triangle):
-        """
-        삼각형을 완성할 수 있는 선분을 찾는 함수
-        """
-        for line in combinations(triangle, 2):
-            if line not in self.drawn_lines and self.check_availability(line):
-                return line
-        return None  
-        
-
     def find_best_selection(self):
         # 0. 가능한 모든 선분
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
@@ -106,29 +82,73 @@ class MACHINE():
             else:
                 print(f"available -> {available}")
                 return random.choice(available)   
+
         '''
-        <일단 주석 처리. 트릭 전략, 삼각형 완성 전략, 짝수 삼각형 전략, 기존로직 위에 종합함.>
-        # 2. 삼각형 완성 전략
-        triangle_completing_line = self.find_triangle_completing_line()
+        # RULE 트릭 피하는 규칙 추가
         if triangle_completing_line:
-            triangle_completing_line = list(triangle_completing_line)
-            return triangle_completing_line
-         
-        # 3. 짝수 삼각형 전략
-        even_triangle_lines = [line for line in available if self.can_form_even_number_of_triangles_after_drawing_line(line)]
-        if even_triangle_lines:
-            return random.choice(even_triangle_lines)
-
-        # 4. 기존 로직에 따라 선분을 선택
-        if not remaining_lines:
-            return random.choice(available)#모든 가능한 선 중에 랜덤으로 한개의 선분 반환
+            count = -1
+            for i in range(len(triangle_completing_line)):
+                count += 1
+                print(f" i -> {i} / count -> {count}")
+                print(f"triangle_completing_line[i] -> {triangle_completing_line[i]}")
+                if not Trick.avoid_trick(self, triangle_completing_line[i]):
+                    print(f" Trick_decision -> {Trick.avoid_trick(self, triangle_completing_line[i])}")
+                    return triangle_completing_line[i]
+                else:
+                    print(f" count: {count} VS len(triangle_completing_line)-1: {len(triangle_completing_line)-1}")
+                    if count == len(triangle_completing_line)-1:
+                        if best_trick_line:
+                            print(f"best_trick_line -> {best_trick_line}")
+                            return random.choice(best_trick_line)
+                        elif remaining_lines:
+                            print(f"remaining_lines -> {remaining_lines}")
+                            return random.choice(remaining_lines)
+                        elif even_triangle_lines:
+                            print(f"even_triangle_lines -> {even_triangle_lines}")
+                            return random.choice(even_triangle_lines)
+                        else:
+                            print(f"available -> {available}")
+                            return random.choice(available)                        
         else:
-            return random.choice(remaining_lines)
+            if best_trick_line:
+                print(f"best_trick_line -> {best_trick_line}")
+                return random.choice(best_trick_line)
+            elif remaining_lines:
+                print(f"remaining_lines -> {remaining_lines}")
+                return random.choice(remaining_lines)
+            elif even_triangle_lines:
+                print(f"even_triangle_lines -> {even_triangle_lines}")
+                return random.choice(even_triangle_lines)
+            else:
+                print(f"available -> {available}")
+                return random.choice(available) 
         '''
-
        
-    #턴마다 system에서 machine의 변수들을 업데이트 해 주는 것임
 
+    def find_triangle_completing_line(self):
+        """
+        삼각형을 완성하는 선분을 찾는 함수
+        """
+        for line in self.drawn_lines:
+            connected_lines = self.find_connected_lines(line)
+            for connected_line in connected_lines:
+                possible_triangle = self.form_triangle(line, connected_line)
+                if possible_triangle and self.is_triangle_empty(possible_triangle):
+                    completing_line = self.find_completing_line(possible_triangle)
+                    if completing_line:
+                        completing_line = [list(completing_line)]
+                        return completing_line
+        return None
+
+    def find_completing_line(self, triangle):
+        """
+        삼각형을 완성할 수 있는 선분을 찾는 함수
+        """
+        for line in combinations(triangle, 2):
+            if line not in self.drawn_lines and self.check_availability(line):
+                return line
+        return None  
+        
     def check_all_lines(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
@@ -292,6 +312,28 @@ class MACHINE():
         # 두 선분으로 형성되는 새로운 삼각형 확인
         combined_points = set(line1 + line2)
         return len(combined_points) ==3
+
+    # Score Checking Functions
+    def check_triangle_number(self, drawn_lines, whole_points):
+        triangles = []
+        for combination in combinations(drawn_lines, 3):
+            points = set(sum(combination, []))  # 선분들의 점들을 모두 합친다.
+            if len(points) == 3:  # 점이 3개면 삼각형입니다.
+                triangles.append(points)
+        
+        # 각 삼각형이 다른 점을 포함하지 않는지 확인
+        empty_triangles = []
+        for triangle in triangles:
+            polygon = Polygon(triangle)
+            for point in whole_points:
+                if polygon.contains(Point(point)) and point not in triangle:  # 삼각형의 안에 점이 있고, 그 점이 삼각형의 꼭짓점이 아니면
+                    break  # 이 삼각형은 비어있지 않습니다.
+            else:  # for loop가 break 없이 끝나면, 이 삼각형은 안에 점이 없음을 의미한다.
+                empty_triangles.append(triangle)
+        
+        # '안에 점이 없는 삼각형'의 개수
+        triangle_number = len(empty_triangles)
+        return triangle_number
 
 
 # Trick 
@@ -459,8 +501,48 @@ class Trick:
         best_trick_line = [flattened_best_trick_line[i:i+1] for i in range(0, len(flattened_best_trick_line))] 
         best_trick_line = [list(item[0]) for item in best_trick_line]
         return best_trick_line
-
     
+    def avoid_trick(self, selection_line):
+        total_line = list(combinations(self.whole_points, 2)) ; total_line = [sorted(line) for line in total_line] # 맵에서 그을 수 있는 모든 선분
+        curr_drawn = [sorted(line) for line in self.drawn_lines_copy]                   # 현재 그려진 선분
+        next_drawn = curr_drawn ; next_drawn.append(selection_line)                     # selection_line을 긋고 난 후 그려진 선분
+        whole_points = self.whole_points_copy                                           # 맵에 표시된 모든 점
+        next_avail = [sorted(line) for line in total_line if line not in next_drawn]    # 상대방이 그을 수 있는 모든 선분
+        
+        '''
+        # 맵에서 그을 수 있는 모든 선분 / 현재 그을 수 있는 모든 선분 / best_selection_line을 긋고 난 후 그을 수 있는 모든 선분
+        total_line = list(combinations(self.whole_points, 2)) ; total_line = [sorted(line) for line in total_line]
+        curr_avail = [sorted(line) for line in total_line if line not in curr_drawn]
+        next_avail = [sorted(line) for line in total_line if line not in next_drawn]
+        '''
+        #check_triangle_number(self, drawn_lines, whole_points): 이용
+        # 내가 획득 가능한 점수
+        curr_triangle_num = self.check_triangle_number(curr_drawn, whole_points)
+        next_triangle_num = self.check_triangle_number(next_drawn, whole_points)
+        my_highest_score = next_triangle_num - curr_triangle_num 
+        print(f"my_highest_score -> {my_highest_score}")
+        print(f"curr_triangle_num -> {curr_triangle_num}")
+        print(f"next_triangle_num -> {next_triangle_num}")
+        
+        # 상대방이 획득 가능한 최고의 점수
+        other_highest_score = 0
+        for i in range(len(next_avail)):
+            nextnext_drawn = next_drawn ; nextnext_drawn.append(next_avail[i])
+            nextnext_triangle_num = self.check_triangle_number(nextnext_drawn, whole_points)
+            other_score = nextnext_triangle_num - next_triangle_num
+            print(f"other_score -> {other_score}")
+            print(f"nextnext_triangle_num  -> {nextnext_triangle_num}")
+            print(f"next_triangle_num -> {next_triangle_num}")
+            if other_score > other_highest_score:
+                other_highest_score = other_score
+        print(f"other_highest_score -> {other_highest_score}")
+        
+        if my_highest_score == 1:
+            if my_highest_score < other_highest_score:
+                return bool(1) # 트릭에 걸리는 선분 -> TRUE
+            else:
+                return bool(0)# 트릭에 걸리는 선분 -> FALSE
+ 
 # Minmax Tree Node
 class Node:
     def __init__(self, sim_drawnlines):
