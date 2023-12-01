@@ -1,6 +1,6 @@
 import random
 from itertools import combinations
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString, Point, Polygon
 
 import copy  # for deepcopy
 
@@ -36,7 +36,29 @@ class MACHINE():
 
         self.drawn_lines_copy = copy.deepcopy(drawn_lines)
         
+   
+    def find_triangle_completing_line(self):
+        """
+        삼각형을 완성하는 선분을 찾는 함수
+        """
+        for line in self.drawn_lines:
+            connected_lines = self.find_connected_lines(line)
+            for connected_line in connected_lines:
+                possible_triangle = self.form_triangle(line, connected_line)
+                if possible_triangle and self.is_triangle_empty(possible_triangle):
+                    completing_line = self.find_completing_line(possible_triangle)
+                    if completing_line:
+                        return completing_line
+        return None
 
+    def find_completing_line(self, triangle):
+        """
+        삼각형을 완성할 수 있는 선분을 찾는 함수
+        """
+        for line in combinations(triangle, 2):
+            if line not in self.drawn_lines and self.check_availability(line):
+                return line
+        return None  
         
 
     def find_best_selection(self):
@@ -48,6 +70,20 @@ class MACHINE():
         drawn_points = [point for line in drawn_lines for point in line]
         # 이미 그어진 선분의 두 좌표를 제외하다
         remaining_lines = [[point1, point2] for [point1, point2] in available if point1 not in drawn_points and point2 not in drawn_points]
+        # 1. Trick 과정
+
+        # 2. 삼각형 완성 전략
+        triangle_completing_line = self.find_triangle_completing_line()
+        if triangle_completing_line:
+            triangle_completing_line = list(triangle_completing_line)
+            return triangle_completing_line
+        
+        # 3. 짝수 삼각형 전략
+        even_triangle_lines = [line for line in available if self.can_form_even_number_of_triangles_after_drawing_line(line)]
+        if even_triangle_lines:
+            return random.choice(even_triangle_lines)
+
+        # 4. 기존 로직에 따라 선분을 선택
         if not remaining_lines:
             return random.choice(available)#모든 가능한 선 중에 랜덤으로 한개의 선분 반환
         else:
@@ -136,6 +172,43 @@ class MACHINE():
         else:
             return False 
 
+
+        # == 짝수개의 삼각형 ==
+        # 짝수 개의 삼각형 전략을 사용하여 선분을 찾음
+    def find_even_triangle_strategy(self):
+        for line in self.drawn_lines:
+            connected_lines = self.find_connected_lines(line)
+            for connected_line in connected_lines:
+                possible_triangle = self.form_triangle(line, connected_line)
+                if possible_triangle and self.is_triangle_empty(possible_triangle):
+                    if self.can_form_even_number_of_triangles(possible_triangle):
+                        return self.select_line_to_maintain_even_balance(possible_triangle)
+        return None
+
+    # 주어진 선분과 연결된 다른 선분들을 찾음
+    def find_connected_lines(self, line):
+        connected = []
+        for other_line in self.drawn_lines:
+            if line != other_line and (line[0] in other_line or line[1] in other_line):
+                connected.append(other_line)
+        return connected
+
+    # 주어진 두 선분으로 삼각형을 형성할 수 있는지 확인
+    def form_triangle(self, line1, line2):
+        points = set(line1 + line2)
+        if len(points) == 3:
+            return list(points)
+        return None
+        
+    # 삼각형 내부에 다른 점이 없는지 확인
+    def is_triangle_empty(self, triangle):
+        triangle_set = set(triangle)
+        for point in self.whole_points:
+            if point not in triangle_set and self.is_point_inside_triangle(point, triangle):
+                return False
+        return True
+
+    
     # 주어진 점이 삼각형 내부에 있는지 확인
     def is_point_inside_triangle(self, point, triangle):
         triangle_polygon = Polygon(triangle)
@@ -157,6 +230,31 @@ class MACHINE():
     def find_available_lines(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
+    def can_form_even_number_of_triangles_after_drawing_line(self, line):
+        # 가정: 새로운 선분을 추가하고, 새로운 삼각형을 만들어낼 수 있는지 확인
+        # 만들어진 새로운 삼각형의 개수를 계산
+        new_triangles = 0
+
+        # 새로운 선분을 추가한 상태에서 연결된 모든 선분을 검사
+        for existing_line in self.drawn_lines:
+            if self.is_connected(line, existing_line):
+                # 새로운 삼각형을 형성하는지 확인
+                if self.forms_new_triangle(line, existing_line):
+                    new_triangles += 1
+
+        # 전체 삼각형 개수 (기존의 개수 + 새로운 개수)가 짝수인지 확인
+        total_triangles = len(self.triangles) + new_triangles
+        return total_triangles % 2 == 0
+
+    def is_connected(self, line1, line2):
+        # 두 선분이 연결되어 있는지 확인하는 로직
+        return set(line1) & set(line2) != set()
+
+    def forms_new_triangle(self, line1, line2):
+        # 두 선분으로 형성되는 새로운 삼각형 확인
+        combined_points = set(line1 + line2)
+        return len(combined_points) ==3
+
     '''
     여기서부터 trick 관련 함수
     '''
