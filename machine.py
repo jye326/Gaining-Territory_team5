@@ -48,6 +48,7 @@ class MACHINE():
                 if possible_triangle and self.is_triangle_empty(possible_triangle):
                     completing_line = self.find_completing_line(possible_triangle)
                     if completing_line:
+                        completing_line = [list(completing_line)]
                         return completing_line
         return None
 
@@ -64,7 +65,7 @@ class MACHINE():
     def find_best_selection(self):
         # 0. 가능한 모든 선분
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
-
+        
         # 1. 상대방에게 점수 안 주는 전략
         self.avail_lines_num = self.count_available()
         print(self.avail_lines_num)
@@ -84,23 +85,27 @@ class MACHINE():
 
         # 3. 삼각형 완성 전략
         triangle_completing_line = self.find_triangle_completing_line()
-        triangle_completing_line = list(triangle_completing_line)
          
         # 4. 짝수 삼각형 전략
         even_triangle_lines = [line for line in available if self.can_form_even_number_of_triangles_after_drawing_line(line)]
 
         # RULE
         if triangle_completing_line:
+            print(f"triangle_completing_line -> {triangle_completing_line}")
             return random.choice(triangle_completing_line)
         else:
             if best_trick_line:
+                print(f"best_trick_line -> {best_trick_line}")
                 return random.choice(best_trick_line)
             elif remaining_lines:
+                print(f"remaining_lines -> {remaining_lines}")
                 return random.choice(remaining_lines)
             elif even_triangle_lines:
+                print(f"even_triangle_lines -> {even_triangle_lines}")
                 return random.choice(even_triangle_lines)
             else:
-                return random.choice(available)           
+                print(f"available -> {available}")
+                return random.choice(available)   
         '''
         <일단 주석 처리. 트릭 전략, 삼각형 완성 전략, 짝수 삼각형 전략, 기존로직 위에 종합함.>
         # 2. 삼각형 완성 전략
@@ -396,8 +401,6 @@ class Trick:
             else:
                 if in_count == 0:
                     trick_candidate.append(avail_trick_point[j])
-        
-            count = in_count + out_count
 
             if out_count == 3:
                 if in_count > highest_in_count:
