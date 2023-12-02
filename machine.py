@@ -127,18 +127,22 @@ class MACHINE():
 
     def find_triangle_completing_line(self):
         """
-        삼각형을 완성하는 선분을 찾는 함수
+        삼각형을 완성하는 선분을 찾는 함수. 한 번에 두 개 이상의 삼각형을 완성할 수 있는 경우를 고려한다.
         """
-        for line in self.drawn_lines:
-            connected_lines = self.find_connected_lines(line)
-            for connected_line in connected_lines:
-                possible_triangle = self.form_triangle(line, connected_line)
-                if possible_triangle and self.is_triangle_empty(possible_triangle):
-                    completing_line = self.find_completing_line(possible_triangle)
-                    if completing_line:
-                        completing_line = [list(completing_line)]
-                        return completing_line
-        return None
+        best_line = None
+        max_triangles_formed = 0
+
+        for line in self.check_all_lines():
+            if self.check_availability(line):
+                # 새로운 선을 추가했을 때 삼각형의 개수를 계산
+                new_drawn_lines = self.drawn_lines + [line]
+                triangles_formed = self.check_triangle_number(new_drawn_lines, self.whole_points)
+
+                if triangles_formed > max_triangles_formed:
+                    best_line = line
+                    max_triangles_formed = triangles_formed
+
+        return [best_line] if best_line else None
 
     def find_completing_line(self, triangle):
         """
