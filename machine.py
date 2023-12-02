@@ -237,9 +237,8 @@ class MACHINE():
             available = self.sim_check_all_lines() # 후보 라인은 모든 라인이다.
         else:#이미 전체 그릴 수 있는 수는 등록이 되어 있고, 현재 상황에서 그릴 수 있는 line list가 필요한 경우
             available = self.check_all_lines()  # 현재 보드판을 available로 사용
-
         sim_drawn_lines = copy.deepcopy(drawn_lines)    #현재 그려진 라인
-
+        
         for line1 in available:
             if self.sim_check_availability(line1, sim_drawn_lines=sim_drawn_lines):
                 sim_drawn_lines.append(line1)
@@ -369,7 +368,7 @@ class MACHINE():
     def find_available_lines(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
-    
+
     def can_form_even_number_of_triangles_after_drawing_line(self, line):
         # 가정: 새로운 선분을 추가하고, 새로운 삼각형을 만들어낼 수 있는지 확인
         # 만들어진 새로운 삼각형의 개수를 계산
@@ -425,12 +424,11 @@ class MACHINE():
 class Tree:
     max_lines_num = 0
     class Node:
-        def __init__(self, sim_drawn_lines, turn):
+        def __init__(self, sim_drawn_lines):
             self.sim_drawn_lines = [copy.deepcopy(sim_drawn_lines)] #node별로 개별 sim_drawnliens가 필요
-            self.score = 0   #sim_score
+            self.score = None   #sim_score
             self.children = []  # 그릴 수 있는 선택지들
             self.parent = None
-            self.turn = turn # 턴 구분용 변수
             
 
         def add_child(self, child): #add_child(Node(이미 그려진 라인))
@@ -452,18 +450,13 @@ class Tree:
                 return True
             else:
                 return False
-            
-        #자신의 턴인지 상대의 턴인지 반환하는 함수
-        def get_turn(self):
-            return self.turn
 
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
-        self.root = self.Node(drawn_lines, turn=0)
+        self.root = self.Node(drawn_lines)
         Tree.max_lines_num = max_lines_num
 
-    def add_node(self, parent_node, line): #line이 들어오면 해당 라인을
-        child_turn = 0 if parent_node.get_turn() == -1 else -1
-        child_node = self.Node(line, turn=child_turn)
+    def add_node(self, parent_node, line): #line이 들어오면 해당 라인을 
+        child_node = self.Node(line)
         parent_node.add_child(child_node)
         return child_node
     
@@ -472,8 +465,8 @@ class Tree:
             node = self.root
         spaces = ' ' * level * 4
         prefix = spaces + "|__ " if node.parent else ""
-        print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.score})")
 
+        print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.score})")
 
         for child in node.children:
             self.print_tree(child, level + 1)
