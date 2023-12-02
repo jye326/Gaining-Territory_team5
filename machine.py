@@ -101,7 +101,7 @@ class MACHINE():
                 node.add_child(child_node)
                 # if not child_node.is_terminal_node():
                 #     self.populate_tree(child_node)
-                if child_node.get_level() < 4:
+                if child_node.get_level() < 3:
                     self.populate_tree(child_node)
                
 
@@ -234,47 +234,6 @@ class MACHINE():
     def find_available_lines(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
-    
-    #삼각형이 완성되었는지 확인하는 함수(system.py에서 가져옴)    
-    def check_triangle(self, line):
-        self.get_score = False
-
-        point1 = line[0]
-        point2 = line[1]
-
-        point1_connected = []
-        point2_connected = []
-
-        for l in self.drawn_lines:
-            if l==line: # 자기 자신 제외
-                continue
-            if point1 in l:
-                point1_connected.append(l)
-            if point2 in l:
-                point2_connected.append(l)
-
-        if point1_connected and point2_connected: # 최소한 2점 모두 다른 선분과 연결되어 있어야 함
-            for line1, line2 in product(point1_connected, point2_connected):
-                
-                # Check if it is a triangle & Skip the triangle has occupied
-                triangle = self.organize_points(list(set(chain(*[line, line1, line2]))))
-                if len(triangle) != 3 or triangle in self.triangles:
-                    continue
-
-                empty = True
-                for point in self.whole_points:
-                    if point in triangle:
-                        continue
-                    if bool(Polygon(triangle).intersection(Point(point))):
-                        empty = False
-
-                if empty:
-                    self.triangles.append(triangle)
-                    self.score[PLAYERS.index(self.turn)]+=1
-
-                    color = USER_COLOR if self.turn=="USER" else MACHINE_COLOR
-                    self.occupy_triangle(triangle, color=color)
-                    self.get_score = True
     
 # minmax는 node에서 돌릴 수 있어야함
 # node는 tree와는 별개인가?
