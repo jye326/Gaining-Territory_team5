@@ -1,6 +1,7 @@
 import random
-from itertools import combinations
+
 from shapely.geometry import LineString, Point, Polygon
+from itertools import product, chain, combinations
 
 import copy  # for deepcopy
 
@@ -52,6 +53,9 @@ class MACHINE():
             empty = []
             self.avail_lines_num = len(self.remaind_available_lines(empty))
         
+        if self.can_make_triangle(available):# 두점으로 삼각형 되면 그거 return
+            return self.can_make_triangle(available)
+
         drawn_lines = self.drawn_lines
 
         remaining_lines = [line for line in available if line not in drawn_lines and self.check_availability(line)] # 후공일 경우 남아있는 라인 업데이트
@@ -62,8 +66,7 @@ class MACHINE():
             # RootNode Random으로 설정?
             return random.choice(available)#모든 가능한 선 중에 랜덤으로 한개의 선분 반환
         else:
-            # 트리 생성 및 루트 노드에 가능한 모든 라인 추가
-            
+            # 트리 생성 및 루트 노드에 가능한 모든 라인 추가  
             tree = Tree(self.drawn_lines, self.avail_lines_num)
             tree.root.sim_drawn_lines.clear()#트리 생성시에 drawn_lines는 비워준다.
             root_node = tree.root
@@ -79,7 +82,18 @@ class MACHINE():
             tree.print_tree()
             # 임시로 랜덤한 라인을 선택하여 반환
             return random.choice(remaining_lines)
-        
+
+    # Organization Functions
+    def organize_points(self, point_list):
+        point_list.sort(key=lambda x: (x[0], x[1]))
+        return point_list
+
+    def can_make_triangle(self, available):
+        for line in available:
+            if(self.check_if_triangle(line)):
+                return line
+        return None
+
     def populate_tree(self, node):
         # 현재 노드의 sim_drawn_lines에 부모의 drawn_lines와 현재 라인 추가
         if node.parent and node.parent.sim_drawn_lines:
@@ -103,6 +117,8 @@ class MACHINE():
         #여기부터 트릭파트----------------------------------------------------------------------
         # 1. 상대방에게 점수 안 주는 전략
 
+    # 룰 기반 트리 서치
+    def rule_and_trick(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         
         if self.avail_lines_num == 0:
@@ -125,7 +141,7 @@ class MACHINE():
 
         # 3. 삼각형 완성 전략
         triangle_completing_line = self.find_triangle_completing_line()
-         
+            
         # 4. 짝수 삼각형 전략
         even_triangle_lines = [line for line in available if self.can_form_even_number_of_triangles_after_drawing_line(line)]
 
@@ -147,48 +163,47 @@ class MACHINE():
                 print(f"available -> {available}")
                 return random.choice(available)   
 
-        '''
-        # RULE 트릭 피하는 규칙 추가
-        if triangle_completing_line:
-            count = -1
-            for i in range(len(triangle_completing_line)):
-                count += 1
-                print(f" i -> {i} / count -> {count}")
-                print(f"triangle_completing_line[i] -> {triangle_completing_line[i]}")
-                if not Trick.avoid_trick(self, triangle_completing_line[i]):
-                    print(f" Trick_decision -> {Trick.avoid_trick(self, triangle_completing_line[i])}")
-                    return triangle_completing_line[i]
-                else:
-                    print(f" count: {count} VS len(triangle_completing_line)-1: {len(triangle_completing_line)-1}")
-                    if count == len(triangle_completing_line)-1:
-                        if best_trick_line:
-                            print(f"best_trick_line -> {best_trick_line}")
-                            return random.choice(best_trick_line)
-                        elif remaining_lines:
-                            print(f"remaining_lines -> {remaining_lines}")
-                            return random.choice(remaining_lines)
-                        elif even_triangle_lines:
-                            print(f"even_triangle_lines -> {even_triangle_lines}")
-                            return random.choice(even_triangle_lines)
-                        else:
-                            print(f"available -> {available}")
-                            return random.choice(available)                        
-        else:
-            if best_trick_line:
-                print(f"best_trick_line -> {best_trick_line}")
-                return random.choice(best_trick_line)
-            elif remaining_lines:
-                print(f"remaining_lines -> {remaining_lines}")
-                return random.choice(remaining_lines)
-            elif even_triangle_lines:
-                print(f"even_triangle_lines -> {even_triangle_lines}")
-                return random.choice(even_triangle_lines)
+            '''
+            # RULE 트릭 피하는 규칙 추가
+            if triangle_completing_line:
+                count = -1
+                for i in range(len(triangle_completing_line)):
+                    count += 1
+                    print(f" i -> {i} / count -> {count}")
+                    print(f"triangle_completing_line[i] -> {triangle_completing_line[i]}")
+                    if not Trick.avoid_trick(self, triangle_completing_line[i]):
+                        print(f" Trick_decision -> {Trick.avoid_trick(self, triangle_completing_line[i])}")
+                        return triangle_completing_line[i]
+                    else:
+                        print(f" count: {count} VS len(triangle_completing_line)-1: {len(triangle_completing_line)-1}")
+                        if count == len(triangle_completing_line)-1:
+                            if best_trick_line:
+                                print(f"best_trick_line -> {best_trick_line}")
+                                return random.choice(best_trick_line)
+                            elif remaining_lines:
+                                print(f"remaining_lines -> {remaining_lines}")
+                                return random.choice(remaining_lines)
+                            elif even_triangle_lines:
+                                print(f"even_triangle_lines -> {even_triangle_lines}")
+                                return random.choice(even_triangle_lines)
+                            else:
+                                print(f"available -> {available}")
+                                return random.choice(available)                        
             else:
-                print(f"available -> {available}")
-                return random.choice(available) 
-        '''
+                if best_trick_line:
+                    print(f"best_trick_line -> {best_trick_line}")
+                    return random.choice(best_trick_line)
+                elif remaining_lines:
+                    print(f"remaining_lines -> {remaining_lines}")
+                    return random.choice(remaining_lines)
+                elif even_triangle_lines:
+                    print(f"even_triangle_lines -> {even_triangle_lines}")
+                    return random.choice(even_triangle_lines)
+                else:
+                    print(f"available -> {available}")
+                    return random.choice(available) 
+            '''
        
-
     def find_triangle_completing_line(self):
         """
         삼각형을 완성하는 선분을 찾는 함수. 한 번에 두 개 이상의 삼각형을 완성할 수 있는 경우를 고려한다.
@@ -222,11 +237,50 @@ class MACHINE():
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
         # 조건에 부합하는 모든 가능한 라인을 반환
+
     def sim_check_all_lines(self):  #그냥 모든 라인을 반환
         empty = []
         print("this is sim_chek_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.sim_check_availability([point1, point2], empty)]
         return available
+
+        # system.check_triangle이용, line이 추가되면 삼각형이 만들어지는 지 T/F 반환
+    def check_if_triangle(self, line):
+        self.get_score = False
+
+        point1 = line[0]
+        point2 = line[1]
+
+        point1_connected = []
+        point2_connected = []
+
+        for l in self.drawn_lines:
+            if l==line: # 자기 자신 제외
+                continue
+            if point1 in l:
+                point1_connected.append(l)
+            if point2 in l:
+                point2_connected.append(l)
+
+        if point1_connected and point2_connected: # 최소한 2점 모두 다른 선분과 연결되어 있어야 함
+            for line1, line2 in product(point1_connected, point2_connected):
+                
+                # Check if it is a triangle & Skip the triangle has occupied
+                triangle = self.organize_points(list(set(chain(*[line, line1, line2]))))
+                if len(triangle) != 3 or triangle in self.triangles:
+                    continue
+
+                empty = True
+                for point in self.whole_points:
+                    if point in triangle:
+                        continue
+                    if bool(Polygon(triangle).intersection(Point(point))):
+                        empty = False
+
+                if empty:   # 삼각형을 만들 수 있는 경우
+                    return True
+                else:
+                    return False
 
     # count_avail_lines를 성공적으로 반환함 #len(remaind_available_lines)-> 남은 그릴 수 있는 선 수
     def remaind_available_lines(self, drawn_lines):
