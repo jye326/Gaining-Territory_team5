@@ -44,7 +44,7 @@ class MACHINE():
 
     def find_best_selection(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
-        
+
         if self.avail_lines_num == 0:
             empty = []
             self.avail_lines_num = len(self.remaind_available_lines(empty))
@@ -81,6 +81,7 @@ class MACHINE():
                 #child_node.sim_drawn_lines.append(line)
                 self.populate_tree(child_node)  #root_node아닌가?
                 print("한번은 끝나니?????????????????????????????")
+
             # 트리 출력 (디버깅용)
             tree.print_tree()
             # 임시로 랜덤한 라인을 선택하여 반환
@@ -95,11 +96,12 @@ class MACHINE():
         available_lines = self.sim_check_all_lines()
         for line in available_lines:
             if self.sim_check_availability(line, node.sim_drawn_lines):
-                child_node = Tree.Node(line, 0)
+                child_turn = -1 if node.get_turn() == 0 else 0
+                child_node = Tree.Node(line, turn=child_turn)
                 node.add_child(child_node)
                 # if not child_node.is_terminal_node():
                 #     self.populate_tree(child_node)
-                if child_node.get_level() < 3:
+                if child_node.get_level() < 4:
                     self.populate_tree(child_node)
                
 
@@ -118,13 +120,13 @@ class MACHINE():
     #턴마다 system에서 machine의 변수들을 업데이트 해 주는 것임
 
     def check_all_lines(self):
-        print("this is check_all_lines========================================")
+        #print("this is check_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
         # 조건에 부합하는 모든 가능한 라인을 반환
     def sim_check_all_lines(self):  #그냥 모든 라인을 반환
         empty = []
-        print("this is sim_chek_all_lines========================================")
+        #print("this is sim_chek_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.sim_check_availability([point1, point2], empty)]
         return available
 
@@ -233,6 +235,47 @@ class MACHINE():
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
     
+    #삼각형이 완성되었는지 확인하는 함수(system.py에서 가져옴)    
+    def check_triangle(self, line):
+        self.get_score = False
+
+        point1 = line[0]
+        point2 = line[1]
+
+        point1_connected = []
+        point2_connected = []
+
+        for l in self.drawn_lines:
+            if l==line: # 자기 자신 제외
+                continue
+            if point1 in l:
+                point1_connected.append(l)
+            if point2 in l:
+                point2_connected.append(l)
+
+        if point1_connected and point2_connected: # 최소한 2점 모두 다른 선분과 연결되어 있어야 함
+            for line1, line2 in product(point1_connected, point2_connected):
+                
+                # Check if it is a triangle & Skip the triangle has occupied
+                triangle = self.organize_points(list(set(chain(*[line, line1, line2]))))
+                if len(triangle) != 3 or triangle in self.triangles:
+                    continue
+
+                empty = True
+                for point in self.whole_points:
+                    if point in triangle:
+                        continue
+                    if bool(Polygon(triangle).intersection(Point(point))):
+                        empty = False
+
+                if empty:
+                    self.triangles.append(triangle)
+                    self.score[PLAYERS.index(self.turn)]+=1
+
+                    color = USER_COLOR if self.turn=="USER" else MACHINE_COLOR
+                    self.occupy_triangle(triangle, color=color)
+                    self.get_score = True
+    
 # minmax는 node에서 돌릴 수 있어야함
 # node는 tree와는 별개인가?
 # Tree클래스는 1개만 생성한다. tree 내부에 node를 계속 만들어나간다.
@@ -243,12 +286,11 @@ class Tree:
     class Node:
         def __init__(self, sim_drawn_lines, turn):
             self.sim_drawn_lines = [copy.deepcopy(sim_drawn_lines)] #node별로 개별 sim_drawnliens가 필요
-            self.score = None   #sim_score
+            self.score = 0   #sim_score
             self.children = []  # 그릴 수 있는 선택지들
             self.parent = None
             self.turn = turn # 턴 구분용 변수
             
-
         def add_child(self, child): #add_child(Node(이미 그려진 라인))
             child.parent = self
             self.children.append(child)
@@ -260,9 +302,6 @@ class Tree:
                 level += 1
                 p = p.parent
             return level
-        
-        def get_turn(self):
-            return self.turn
 
         def is_terminal_node(self):
             # 터미널 노드 여부를 판단하는 로직 구현
@@ -271,12 +310,16 @@ class Tree:
                 return True
             else:
                 return False
+        
+        #자신의 턴인지 상대의 턴인지 반환하는 함수
+        def get_turn(self):
+            return self.turn
 
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
         self.root = self.Node(drawn_lines, turn=0)
         Tree.max_lines_num = max_lines_num
 
-    def add_node(self, parent_node, line): #line이 들어오면 해당 라인을 
+    def add_node(self, parent_node, line): #line이 들어오면 해당 라인을
         child_turn = 0 if parent_node.get_turn() == -1 else -1
         child_node = self.Node(line, turn=child_turn)
         parent_node.add_child(child_node)
@@ -287,7 +330,6 @@ class Tree:
             node = self.root
         spaces = ' ' * level * 4
         prefix = spaces + "|__ " if node.parent else ""
-        #print(prefix + str(node.sim_drawn_lines) + " (Score: " + str(node.score) + ")")
         print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.score})")
 
         for child in node.children:
