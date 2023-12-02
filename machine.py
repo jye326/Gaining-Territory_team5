@@ -95,9 +95,11 @@ class MACHINE():
         available_lines = self.sim_check_all_lines()
         for line in available_lines:
             if self.sim_check_availability(line, node.sim_drawn_lines):
-                child_node = Tree.Node(line)
+                child_node = Tree.Node(line, 0)
                 node.add_child(child_node)
-                if not child_node.is_terminal_node():
+                # if not child_node.is_terminal_node():
+                #     self.populate_tree(child_node)
+                if child_node.get_level() < 3:
                     self.populate_tree(child_node)
                
 
@@ -239,11 +241,12 @@ class MACHINE():
 class Tree:
     max_lines_num = 0
     class Node:
-        def __init__(self, sim_drawn_lines):
+        def __init__(self, sim_drawn_lines, turn):
             self.sim_drawn_lines = [copy.deepcopy(sim_drawn_lines)] #node별로 개별 sim_drawnliens가 필요
             self.score = None   #sim_score
             self.children = []  # 그릴 수 있는 선택지들
             self.parent = None
+            self.turn = turn # 턴 구분용 변수
             
 
         def add_child(self, child): #add_child(Node(이미 그려진 라인))
@@ -257,6 +260,9 @@ class Tree:
                 level += 1
                 p = p.parent
             return level
+        
+        def get_turn(self):
+            return self.turn
 
         def is_terminal_node(self):
             # 터미널 노드 여부를 판단하는 로직 구현
@@ -267,11 +273,12 @@ class Tree:
                 return False
 
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
-        self.root = self.Node(drawn_lines)
+        self.root = self.Node(drawn_lines, turn=0)
         Tree.max_lines_num = max_lines_num
 
     def add_node(self, parent_node, line): #line이 들어오면 해당 라인을 
-        child_node = self.Node(line)
+        child_turn = 0 if parent_node.get_turn() == -1 else -1
+        child_node = self.Node(line, turn=child_turn)
         parent_node.add_child(child_node)
         return child_node
     
@@ -280,7 +287,8 @@ class Tree:
             node = self.root
         spaces = ' ' * level * 4
         prefix = spaces + "|__ " if node.parent else ""
-        print(prefix + str(node.sim_drawn_lines) + " (Score: " + str(node.score) + ")")
+        #print(prefix + str(node.sim_drawn_lines) + " (Score: " + str(node.score) + ")")
+        print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.score})")
 
         for child in node.children:
             self.print_tree(child, level + 1)
