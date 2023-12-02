@@ -1,5 +1,5 @@
 import random
-from itertools import combinations
+from itertools import combinations, product
 from shapely.geometry import LineString, Point
 
 import copy  # for deepcopy
@@ -99,6 +99,11 @@ class MACHINE():
                 child_turn = -1 if node.get_turn() == 0 else 0
                 child_node = Tree.Node(line, turn=child_turn)
                 node.add_child(child_node)
+
+                triangles_count = node.update_triangles_count(line)
+                if triangles_count > 0:
+                    print(f"Found {triangles_count} completed triangles in the current simulation.")
+
                 # if not child_node.is_terminal_node():
                 #     self.populate_tree(child_node)
                 if child_node.get_level() < 4:
@@ -235,47 +240,6 @@ class MACHINE():
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
     
-    #삼각형이 완성되었는지 확인하는 함수(system.py에서 가져옴)    
-    def check_triangle(self, line):
-        self.get_score = False
-
-        point1 = line[0]
-        point2 = line[1]
-
-        point1_connected = []
-        point2_connected = []
-
-        for l in self.drawn_lines:
-            if l==line: # 자기 자신 제외
-                continue
-            if point1 in l:
-                point1_connected.append(l)
-            if point2 in l:
-                point2_connected.append(l)
-
-        if point1_connected and point2_connected: # 최소한 2점 모두 다른 선분과 연결되어 있어야 함
-            for line1, line2 in product(point1_connected, point2_connected):
-                
-                # Check if it is a triangle & Skip the triangle has occupied
-                triangle = self.organize_points(list(set(chain(*[line, line1, line2]))))
-                if len(triangle) != 3 or triangle in self.triangles:
-                    continue
-
-                empty = True
-                for point in self.whole_points:
-                    if point in triangle:
-                        continue
-                    if bool(Polygon(triangle).intersection(Point(point))):
-                        empty = False
-
-                if empty:
-                    self.triangles.append(triangle)
-                    self.score[PLAYERS.index(self.turn)]+=1
-
-                    color = USER_COLOR if self.turn=="USER" else MACHINE_COLOR
-                    self.occupy_triangle(triangle, color=color)
-                    self.get_score = True
-    
 # minmax는 node에서 돌릴 수 있어야함
 # node는 tree와는 별개인가?
 # Tree클래스는 1개만 생성한다. tree 내부에 node를 계속 만들어나간다.
@@ -287,6 +251,7 @@ class Tree:
         def __init__(self, sim_drawn_lines, turn):
             self.sim_drawn_lines = [copy.deepcopy(sim_drawn_lines)] #node별로 개별 sim_drawnliens가 필요
             self.score = 0   #sim_score
+            self.triangles_count = 0  # 해당 노드에서 완성된 삼각형 개수
             self.children = []  # 그릴 수 있는 선택지들
             self.parent = None
             self.turn = turn # 턴 구분용 변수
@@ -314,7 +279,19 @@ class Tree:
         #자신의 턴인지 상대의 턴인지 반환하는 함수
         def get_turn(self):
             return self.turn
+        
+        #선분 추가로 완성되는 삼각형의 개수를 return하는 함수
+        def update_triangles_count(self, line):
+            triangles_count_before = self.triangles_count
 
+            for triangle in self.sim_drawn_lines[-1]:
+                if line[0] in triangle and line[1] in triangle:
+                    self.triangles_count += 1
+
+            triangles_count_after = self.triangles_count
+
+            return triangles_count_after - triangles_count_before
+            
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
         self.root = self.Node(drawn_lines, turn=0)
         Tree.max_lines_num = max_lines_num
