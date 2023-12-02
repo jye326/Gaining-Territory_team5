@@ -89,7 +89,8 @@ class MACHINE():
         available_lines = self.sim_check_all_lines()
         for line in available_lines:
             if self.sim_check_availability(line, node.sim_drawn_lines):
-                child_node = Tree.Node(line)
+                child_turn = -1 if node.get_turn() == 0 else 0
+                child_node = Tree.Node(line, turn=child_turn)
                 node.add_child(child_node)
                 # if not child_node.is_terminal_node():
                 #     self.populate_tree(child_node)
@@ -236,9 +237,8 @@ class MACHINE():
             available = self.sim_check_all_lines() # 후보 라인은 모든 라인이다.
         else:#이미 전체 그릴 수 있는 수는 등록이 되어 있고, 현재 상황에서 그릴 수 있는 line list가 필요한 경우
             available = self.check_all_lines()  # 현재 보드판을 available로 사용
-
         sim_drawn_lines = copy.deepcopy(drawn_lines)    #현재 그려진 라인
-
+        
         for line1 in available:
             if self.sim_check_availability(line1, sim_drawn_lines=sim_drawn_lines):
                 sim_drawn_lines.append(line1)
@@ -368,7 +368,7 @@ class MACHINE():
     def find_available_lines(self):
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
-    
+
     def can_form_even_number_of_triangles_after_drawing_line(self, line):
         # 가정: 새로운 선분을 추가하고, 새로운 삼각형을 만들어낼 수 있는지 확인
         # 만들어진 새로운 삼각형의 개수를 계산
@@ -465,7 +465,8 @@ class Tree:
             node = self.root
         spaces = ' ' * level * 4
         prefix = spaces + "|__ " if node.parent else ""
-        print(prefix + str(node.sim_drawn_lines) + " (Score: " + str(node.score) + ")")
+
+        print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.score})")
 
         for child in node.children:
             self.print_tree(child, level + 1)
