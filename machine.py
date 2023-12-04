@@ -3,6 +3,7 @@ import copy  # for deepcopy
 from shapely.geometry import LineString, Point, Polygon
 from itertools import product, chain, combinations
 
+
 class MACHINE():
     """
         [ MACHINE ]..
@@ -44,11 +45,8 @@ class MACHINE():
         
         # tree_search로 선택
         #best_selection = self.tree_search()
- 
         return best_selection
         
-        def tree_search(self):
-            return random.choice(remaining_lines)
 
     def tree_search(self):
         # 0. 가능한 모든 선분
@@ -85,11 +83,8 @@ class MACHINE():
                 root_node.add_child(node)
             
             # root를 시작으로 트리를 생성
-
             for child in root_node.children:
                 self.populate_tree(child)
-
-
 
             # 트리 출력 (디버깅용)
             tree.print_tree()
@@ -258,7 +253,6 @@ class MACHINE():
 
     def sim_check_all_lines(self):  #그냥 모든 라인을 반환
         empty = []
-        #print("this is sim_chek_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.sim_check_availability([point1, point2], empty)]
         return available
 
@@ -381,7 +375,6 @@ class MACHINE():
         else:
             return False
    
-
     # 짝수 개의 삼각형 전략을 사용하여 선분을 찾음
     def find_even_triangle_strategy(self):
         for line in self.drawn_lines:
@@ -507,6 +500,8 @@ class MACHINE():
 
 '''
     여기서부터 class Trick
+    # m = MACHINE()
+    # trick_instance = m.Trick(m)
 '''
 
 # Trick 
@@ -707,6 +702,7 @@ class Trick:
                     #print(f"제외한 후에 best_trick_line -> {best_trick_line}")
         return best_trick_line
     
+    # 해당 선분이 트릭에 걸리는 선인지 확인하는 함수
     def is_line_is_trick(self, selection_line):       
         # 내가 획득할 점수
         my_turn_lines = [sorted(line) for line in self.drawn_lines]
@@ -740,7 +736,8 @@ class Trick:
             return True
         else:
             return False
-        
+       
+    # 트릭에 걸리는 선들을 반환하는 함수
     def find_fatal_lines(self):
         total_lines = list(combinations(self.whole_points, 2))
         total_lines = [sorted(line) for line in total_lines]
@@ -765,6 +762,7 @@ class Trick:
     여기서부터 class Tree & Node
 '''
 
+
 # minmax는 node에서 돌릴 수 있어야함
 # node는 tree와는 별개인가?
 # Tree클래스는 1개만 생성한다. tree 내부에 node를 계속 만들어나간다.
@@ -786,17 +784,16 @@ class Tree:
     #         self.children = []  # 그릴 수 있는 선택지들
     #         self.parent = None
 
-class Node:
-    def __init__(self, sim_score=None, sim_drawn_lines=None, sim_whole_points=None, sim_triangles=None, turn=1):
-        self.sim_score = [0, 0] if sim_score is None else copy.deepcopy(sim_score)
-        self.sim_drawn_lines = copy.deepcopy(sim_drawn_lines)
-        self.sim_whole_points = [] if sim_whole_points is None else copy.deepcopy(sim_whole_points)
-        self.sim_triangles = [] if sim_triangles is None else copy.deepcopy(sim_triangles)
-        self.turn = turn
-        self.children = []
-        self.parent = None
-            
 
+    class Node:
+        def __init__(self, sim_score=None, sim_drawn_lines=None, sim_whole_points=None, sim_triangles=None, turn=1):
+            self.sim_score = [0, 0] if sim_score is None else copy.deepcopy(sim_score)
+            self.sim_drawn_lines = copy.deepcopy(sim_drawn_lines)
+            self.sim_whole_points = [] if sim_whole_points is None else copy.deepcopy(sim_whole_points)
+            self.sim_triangles = [] if sim_triangles is None else copy.deepcopy(sim_triangles)
+            self.turn = turn
+            self.children = []
+            self.parent = None
             
             
         # Score Checking Functions  #각 노드별로 check해야하니까 node클래스 내부함수로
@@ -876,8 +873,8 @@ class Node:
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
         self.root = self.Node(sim_drawn_lines = drawn_lines)
         Tree.max_lines_num = max_lines_num
-   
 
+  
     def print_tree(self, node=None, level=0):
         if node is None:
             node = self.root
@@ -885,7 +882,6 @@ class Node:
         prefix = spaces + "|__ " if node.parent else ""
         #print(prefix + f"{node.sim_drawn_lines}")
         print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.get_point()})")
-
 
         for child in node.children:
             self.print_tree(child, level + 1)
@@ -905,6 +901,3 @@ class Node:
                 eval = self.minimax(child, depth - 1, True)
                 minEval = min(minEval, eval)
             return minEval
-
-    # m = MACHINE()
-    # trick_instance = m.Trick(m)
