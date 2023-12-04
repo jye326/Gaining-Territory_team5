@@ -33,7 +33,7 @@ class MACHINE():
         self.sim_triangles = []
         
         
-        #print(self.remaind_available_lines(self.drawn_lines)) # system이 board 정보를 업데이트 하는 시점이 machine초기화 이후이기 때문에 시작 전에 미리 알 수 없을 것 같음
+        print(self.remaind_available_lines(self.drawn_lines)) # system이 board 정보를 업데이트 하는 시점이 machine초기화 이후이기 때문에 시작 전에 미리 알 수 없을 것 같음
         # count_available() -> len(remaind_available_lines())로 변환
         self.drawn_lines_copy = copy.deepcopy(self.drawn_lines)
         self.whole_points_copy = copy.deepcopy(self.whole_points)
@@ -706,30 +706,33 @@ class Trick:
     def is_line_is_trick(self, selection_line):       
         # 내가 획득할 점수
         my_turn_lines = [sorted(line) for line in self.drawn_lines]
-        my_score = self.obtained_score(self.drawn_lines, selection_line)
-        print(f"my_score -> {my_score}")
+        my_score = self.obtained_score(my_turn_lines, selection_line)
+        #print(f"my_score -> {my_score}")
             
         # 상대방이 획득 가능한 최고 점수
-        other_turn_lines = my_turn_lines ; other_turn_lines.append(selection_line)
+        other_turn_lines = copy.deepcopy(my_turn_lines)
+        #other_turn_lines = my_turn_lines.copy() # 두 리스트의 메모리 공간이 같아지지 않도록 복사본 사용
+        other_turn_lines.append(selection_line)
         other_turn_lines = [sorted(line) for line in other_turn_lines]
-        print(f"other_turn_lines -> {other_turn_lines}")
-        print(f"my_turn_lines -> {my_turn_lines}")
+        #print(f"other_turn_lines -> {other_turn_lines}")
+        #print(f"my_turn_lines -> {my_turn_lines}")
         
         total_lines = list(combinations(self.whole_points, 2)) ; total_lines = [sorted(line) for line in total_lines] # 맵에서 그을 수 있는 모든 선분
         other_avail_lines = [sorted(line) for line in total_lines if line not in other_turn_lines]
-        print(f"total_lines -> {total_lines}")
+        other_avail_lines = [sorted(line) for line in other_avail_lines if self.check_availability(line)]
+        #print(f"total_lines -> {total_lines}")
         
         other_max_score = 0
         for other_selection_line in other_avail_lines:       
             other_score = self.obtained_score(other_turn_lines, other_selection_line)           
-            print(f"other_selection_line -> {other_selection_line}")
-            print(f"other_score -> {other_score}")
+            #print(f"other_selection_line -> {other_selection_line}")
+            #print(f"other_score -> {other_score}")
             if other_score > other_max_score:               
                 other_max_score = other_score
-                print(f"RENEW!! other_max_score -> {other_max_score}")
+                #print(f"RENEW!! other_max_score -> {other_max_score}")
         
         # 상대방이 획득할 점수가 2인 경우 트릭에 걸렸다고 판단               
-        if my_score != 2 and other_max_score == 2:
+        if other_max_score == 2:
             #print(f"other_selection_line -> {other_selection_line}")
             #print("Watch out! It is trick!!")
             #print(f"my_score: {my_score} VS other_max_score: {other_max_score}")
@@ -742,19 +745,13 @@ class Trick:
         total_lines = list(combinations(self.whole_points, 2))
         total_lines = [sorted(line) for line in total_lines]
         avail_lines = [sorted(line) for line in total_lines if line not in self.drawn_lines]
+        avail_lines = [sorted(line) for line in avail_lines if self.check_availability(line)]
         
         fatal_lines = []
         for line in avail_lines:            
             trick_decision = Trick.is_line_is_trick(self, line)            
             if trick_decision:
-                if self.check_availability(line):
-                    print(f"line -> {line}")
-                    print(f"trick_decision -> {trick_decision}")
-                    fatal_lines.append(line)
-                    print(f"!!!!new fatal_line -> {line}")
-                else: ##
-                    print(f"line -> {line}") ##
-                    print(f"!!!!avail_decision -> {self.check_availability(line)}") ##
+                fatal_lines.append(line)
         return fatal_lines
                 
                 
