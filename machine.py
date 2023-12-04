@@ -44,13 +44,13 @@ class MACHINE():
         
     def find_best_selection(self):
         # rule search로 선택
-        rule_searh_selection = self.rule_search()
+        # rule_searh_selection = self.rule_search()
         
         '''
         # tree_search로 선택
         tree_search_selection = self.tree_search()
         '''
-        return rule_searh_selection
+        return self.tree_search()
         
     
     def tree_search(self):
@@ -68,24 +68,30 @@ class MACHINE():
 
         remaining_lines = [line for line in available if line not in drawn_lines and self.check_availability(line)] # 후공일 경우 남아있는 라인 업데이트
 
-        print(self.remaind_available_lines(drawn_lines= self.drawn_lines))
+        print(self.remaind_available_lines(drawn_lines= self.drawn_lines))  # 남은 가능한 라인들 반환
         
         if not remaining_lines:#남은 라인이 아무것도 없는 상태
             # RootNode Random으로 설정?
             return random.choice(available)#모든 가능한 선 중에 랜덤으로 한개의 선분 반환
         else:
             # 트리 생성 및 루트 노드에 가능한 모든 라인 추가  
-            tree = Tree(self.drawn_lines, self.avail_lines_num)
-            tree.root.sim_drawn_lines.clear()#트리 생성시에 drawn_lines는 비워준다.
+            tree = Tree(drawn_lines=self.drawn_lines, max_lines_num=self.avail_lines_num)
+            
             root_node = tree.root
             
             # 가능한 모든 라인을 루트 노드의 자식으로 추가
+            for line in remaining_lines:
+                node = tree.Node(sim_score=self.score, sim_drawn_lines=self.drawn_lines, sim_whole_points=self.whole_points, sim_triangles=self.triangles, turn = 1)
+                node.sim_drawn_lines.append(line)
+                root_node.add_child(node)
             
-            for line in remaining_lines:    
-                child_node = tree.add_node(root_node, line)
-                #child_node.sim_drawn_lines.append(line)
-                self.populate_tree(child_node)  #root_node아닌가?
-                print("한번은 끝나니?????????????????????????????")
+            # root를 시작으로 트리를 생성
+
+            for child in root_node.children:
+                self.populate_tree(child)
+
+
+
             # 트리 출력 (디버깅용)
             tree.print_tree()
             # 임시로 랜덤한 라인을 선택하여 반환
@@ -104,20 +110,27 @@ class MACHINE():
 
     def populate_tree(self, node):
         # 현재 노드의 sim_drawn_lines에 부모의 drawn_lines와 현재 라인 추가
-        if node.parent and node.parent.sim_drawn_lines:
-            node.sim_drawn_lines.extend(node.parent.sim_drawn_lines)  # extend를 사용하여 리스트의 요소를 추가
+        # if node.parent and node.parent.sim_drawn_lines:
+        #     node.sim_drawn_lines.extend(node.parent.sim_drawn_lines)  # extend를 사용하여 리스트의 요소를 추가
+
         
         # 현재 상황에서 그릴 수 있는 모든 라인을 찾아 자식 노드로 추가
         available_lines = self.sim_check_all_lines()
         for line in available_lines:
-            if self.sim_check_availability(line, node.sim_drawn_lines):
-                child_turn = -1 if node.get_turn() == 0 else 0
-                child_node = Tree.Node(line, turn=child_turn)
-                node.add_child(child_node)
+            if self.sim_check_availability(line, node.sim_drawn_lines): #내 보드에 line을 그릴 수 있나?
+                child_turn = 1 if node.get_turn() == 0 else 0
+                child_node = Tree.Node(sim_score=node.sim_score,sim_drawn_lines=node.sim_drawn_lines,sim_whole_points=node.sim_whole_points,sim_triangles=node.sim_triangles,turn=child_turn)
+                
+                child_node.check_triangle(line=line)# line을 그렸을 때, 삼각형이 되나?
+                child_node.sim_drawn_lines.append(line) #line을 그리는 자식노드를 생성
+
+                node.add_child(child_node)  # 현재 노드의 자식에 추가
+                print(child_node.get_level())
                 # if not child_node.is_terminal_node():
-                #     self.populate_tree(child_node)
-                if child_node.get_level()<3:
+                #    self.populate_tree(child_node)
+                if child_node.get_level() < 3:
                     self.populate_tree(child_node)
+                
             
 
             
@@ -275,7 +288,7 @@ class MACHINE():
 
     def sim_check_all_lines(self):  #그냥 모든 라인을 반환
         empty = []
-        print("this is sim_chek_all_lines========================================")
+        #print("this is sim_check_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.sim_check_availability([point1, point2], empty)]
         return available
 
@@ -532,16 +545,87 @@ class MACHINE():
 
 class Tree:
     max_lines_num = 0
+
+    # class Node:
+    #     def __init__(self, sim_score = [0 , 0], sim_drawn_lines = [], sim_whole_points = [], sim_triangles = [], turn = 1):
+    #         self.sim_drawn_lines = [copy.deepcopy(sim_drawn_lines)] #node별로 개별 sim_drawnliens가 필요
+    #         self.sim_score = sim_score   #sim_score
+    #         self.sim_triangles = sim_triangles  #현재 노드에서 그려진 삼각형들
+    #         self.sim_whole_points = sim_whole_points
+    #         if turn == 1:
+    #             self.turn = 0
+    #         else:
+    #             self.turn = 1
+    #         self.children = []  # 그릴 수 있는 선택지들
+    #         self.parent = None
+
     class Node:
-        def __init__(self, sim_drawn_lines):
-            self.sim_drawn_lines = [copy.deepcopy(sim_drawn_lines)] #node별로 개별 sim_drawnliens가 필요
-            self.score = None   #sim_score
-            self.children = []  # 그릴 수 있는 선택지들
+        def __init__(self, sim_score=None, sim_drawn_lines=None, sim_whole_points=None, sim_triangles=None, turn=1):
+            self.sim_score = [0, 0] if sim_score is None else copy.deepcopy(sim_score)
+            self.sim_drawn_lines = copy.deepcopy(sim_drawn_lines)
+            self.sim_whole_points = [] if sim_whole_points is None else copy.deepcopy(sim_whole_points)
+            self.sim_triangles = [] if sim_triangles is None else copy.deepcopy(sim_triangles)
+            self.turn = turn
+            self.children = []
             self.parent = None
-            self.sim_triangle = []  #현재 노드에서 그려진 삼각형들
+            
+
+            
+            
+        # Score Checking Functions  #각 노드별로 check해야하니까 node클래스 내부함수로
+        # line을 통해 score를 변경하고, 득점여부를 return
+        def check_triangle(self, line): #line을 입력받았을때, sim_drawn_lines에 있는 선들로 삼각형이 되냐
+            self.get_score = False
+
+            point1 = line[0]    #line의 두 점
+            point2 = line[1]
+
+            point1_connected = []   #각 점이 연결된 
+            point2_connected = []
+
+        
+            for l in self.sim_drawn_lines:  # 노드 상의 그려진 라인들
+                if l==line: # 자기 자신 제외
+                    continue
+                if point1 in l:
+                    point1_connected.append(l) 
+                if point2 in l:
+                    point2_connected.append(l)
+
+            if point1_connected and point2_connected: # 최소한 2점 모두 다른 선분과 연결되어 있어야 함
+                for line1, line2 in product(point1_connected, point2_connected):
+                    
+                    # Check if it is a triangle & Skip the triangle has occupied
+                    triangle = self.organize_points(list(set(chain(*[line, line1, line2]))))
+                    if len(triangle) != 3 or triangle in self.sim_triangles:
+                        continue
+
+                    empty = True
+                    for point in self.sim_whole_points:
+                        if point in triangle:
+                            continue
+                        if bool(Polygon(triangle).intersection(Point(point))):
+                            empty = False
+
+                    if empty:
+                        self.sim_triangles.append(triangle)
+                        self.sim_score[self.turn]+=1
+                        self.get_score = True
+            
+        def get_turn(self):
+            return self.turn
+
+        def get_point(self):
+            return (self.sim_score[1] - self.sim_score[0])
+        
+        # Organization Functions
+        def organize_points(self, point_list):
+            point_list.sort(key=lambda x: (x[0], x[1]))
+            return point_list
 
         def add_child(self, child): #add_child(Node(이미 그려진 라인))
             child.parent = self
+            child.turn = 1 - self.turn
             self.children.append(child)
 
         def get_level(self):
@@ -559,23 +643,21 @@ class Tree:
                 return True
             else:
                 return False
+        
+
 
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
-        self.root = self.Node(drawn_lines)
+        self.root = self.Node(sim_drawn_lines = drawn_lines)
         Tree.max_lines_num = max_lines_num
 
-    def add_node(self, parent_node, line): #line이 들어오면 해당 라인을 
-        child_node = self.Node(line)
-        parent_node.add_child(child_node)
-        return child_node
-    
+  
     def print_tree(self, node=None, level=0):
         if node is None:
             node = self.root
         spaces = ' ' * level * 4
         prefix = spaces + "|__ " if node.parent else ""
-
-        print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.score})")
+        #print(prefix + f"{node.sim_drawn_lines}")
+        print(prefix + f"Turn: {node.get_turn()}, {node.sim_drawn_lines} (Score: {node.get_point()})")
 
         for child in node.children:
             self.print_tree(child, level + 1)
