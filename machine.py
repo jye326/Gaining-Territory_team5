@@ -5,8 +5,6 @@ from itertools import product, chain, combinations
 
 import copy  # for deepcopy
 
-
-
 class MACHINE():
     """
         [ MACHINE ]..
@@ -19,7 +17,6 @@ class MACHINE():
            - 최종 결과는 find_best_selection을 통해 Line 형태로 도출
                * Line: [(x1, y1), (x2, y2)] -> MACHINE class에서는 x값이 작은 점이 항상 왼쪽에 위치할 필요는 없음 (System이 organize 함)
     """
-
 
     def __init__(self, score=[0, 0], drawn_lines=[], whole_lines=[], whole_points=[], location=[]):
         self.id = "MACHINE"
@@ -62,7 +59,7 @@ class MACHINE():
             empty = []
             self.avail_lines_num = len(self.remaind_available_lines(empty))
         
-        if self.can_make_triangle(available):# 두점으로 삼각형 되면 그거 return
+        if self.can_make_triangle(available): # 두점으로 삼각형 되면 그거 return
             return self.can_make_triangle(available)
 
         drawn_lines = self.drawn_lines
@@ -128,114 +125,97 @@ class MACHINE():
 
     # 룰 기반 트리 서치
     def rule_search(self):
+        # *. Trick 피하는 전략
+        fatal_lines = Trick.find_fatal_lines(self)
+        fatal_lines = [sorted(line) for line in fatal_lines]
+        print(f"fatal_lines -> {fatal_lines}")
+        
         # 0. 가능한 모든 선분
-        available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
+        last_lines = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
+        available_lines = [sorted(line) for line in last_lines]
+        available_lines = [sorted(line) for line in available_lines if line not in fatal_lines]
         
-        # 1. 상대방에게 점수 안 주는 전략
-        if self.avail_lines_num == 0:
-            empty = []
-            self.avail_lines_num = len(self.remaind_available_lines(empty))
-        
-        drawn_lines = self.drawn_lines
-        # 이미 그어진 선분의 모든 좌표를 얻기
-        drawn_points = [point for line in drawn_lines for point in line]
-        #  이미 연결점이 있는 선을 제외하고, 아무것도 연결하지 않은 선의 집합 (다른 점과 연결되어 있지 않은 점 2개를 이은 선분들의 집합)
-        remaining_lines = [[point1, point2] for [point1, point2] in available if point1 not in drawn_points and point2 not in drawn_points]
-        '''
-        # 1. 상대방에게 점수 안 주는 전략
-        self.avail_lines_num = self.count_available()
-        print(self.avail_lines_num)
-        drawn_lines = self.drawn_lines
-        # 이미 그어진 선분의 모든 좌표를 얻기
-        drawn_points = [point for line in drawn_lines for point in line]
-        #  이미 연결점이 있는 선을 제외하고, 아무것도 연결하지 않은 선의 집합 (다른 점과 연결되어 있지 않은 점 2개를 이은 선분들의 집합)
-        remaining_lines = [[point1, point2] for [point1, point2] in available if point1 not in drawn_points and point2 not in drawn_points]
-
-        '''   
-        # 2. Trick 전략
+        # 1. Trick 파는 전략      
         three = Trick.just_3(self)
         triangle_point = Trick.find_triangle_point(self, three)
         trick_point = Trick.find_trick_point(self, triangle_point)
         avail_trick_point = Trick.validate_trick_point(self, trick_point)
         most_completed_trick = Trick.find_most_completed_trick(self, avail_trick_point)
         best_trick_line = Trick.complete_trick(self, most_completed_trick)
-
+                
+        # 2. 상대방에게 점수 안 주는 전략
+        if self.avail_lines_num == 0:
+            empty = []
+            self.avail_lines_num = len(self.remaind_available_lines(empty))
+        drawn_lines = self.drawn_lines
+        # 이미 그어진 선분의 모든 좌표를 얻기
+        drawn_points = [point for line in drawn_lines for point in line]
+        #  이미 연결점이 있는 선을 제외하고, 아무것도 연결하지 않은 선의 집합 (다른 점과 연결되어 있지 않은 점 2개를 이은 선분들의 집합)
+        remaining_lines = [[point1, point2] for [point1, point2] in available_lines if point1 not in drawn_points and point2 not in drawn_points]
+        #remaining_lines = [sorted(line) for line in remaining_lines] 
+        #remaining_lines = [line for line in remaining_lines if line not in fatal_lines]
+        
         # 3. 삼각형 완성 전략
-        triangle_completing_line = self.find_triangle_completing_line()
+        triangle_completing_line = self.find_triangle_completing_lines()
+        triangle_completing_line = [sorted(line) for line in triangle_completing_line] 
+        triangle_completing_line = [line for line in triangle_completing_line if line not in fatal_lines]
          
         # 4. 짝수 삼각형 전략
-        even_triangle_lines = [line for line in available if self.can_form_even_number_of_triangles_after_drawing_line(line)]
+        even_triangle_lines = [line for line in available_lines if self.can_form_even_number_of_triangles_after_drawing_line(line)]
+        even_triangle_lines = [sorted(line) for line in even_triangle_lines] 
+        even_triangle_lines = [line for line in even_triangle_lines if line not in fatal_lines]
         
 
         # 규칙 기반 결정 과정
         if triangle_completing_line:
-            count = 0
-            critical_line = []
-            for i in range(len(triangle_completing_line)):
-                count += 1
-                #print(f" triangle_completing_line ->{triangle_completing_line}")
-                #print(f" len(triangle_completing_line) -> {len(triangle_completing_line)}")
-                #print(f" i -> {i} / count -> {count}")
-                #print(f"triangle_completing_line[i] -> {triangle_completing_line[i]}")
-                if  Trick.avoid_trick(self, triangle_completing_line[i]) == True:
-                    critical_line.append(triangle_completing_line[i])
-                    critical_line = [sorted(line) for line in critical_line]
-                    print(f" Trick_decision -> {Trick.avoid_trick(self, triangle_completing_line[i])}")
-                    print(f" count: {count} VS len(triangle_completing_line): {len(triangle_completing_line)}")
-                    if count == len(triangle_completing_line):
-                        if best_trick_line:
-                            print(f"best_trick_line -> {best_trick_line}")
-                            return random.choice(best_trick_line)
-                        elif remaining_lines:
-                            remaining_lines = [sorted(line) for line in remaining_lines] 
-                            remaining_lines = [line for line in remaining_lines if line not in critical_line]
-                            print(f"remaining_lines -> {remaining_lines}")
-                            return random.choice(remaining_lines)
-                        elif even_triangle_lines:
-                            even_triangle_lines = [sorted(line) for line in even_triangle_lines]
-                            even_triangle_lines = [line for line in even_triangle_lines if line not in critical_line]
-                            print(f"even_triangle_lines -> {even_triangle_lines}")
-                            return random.choice(even_triangle_lines)
-                        else:
-                            print(f"available -> {available}")
-                            return random.choice(available)  
-                else:
-                    print(f" Trick_decision -> {Trick.avoid_trick(self, triangle_completing_line[i])}")
-                    return triangle_completing_line[i]
-                      
+            print(f"triangle_completing_line -> {triangle_completing_line}")
+            return random.choice(triangle_completing_line)       
+        elif best_trick_line:
+            print(f"best_trick_line -> {best_trick_line}")
+            return random.choice(best_trick_line)
+        elif remaining_lines:
+            print(f"remaining_lines -> {remaining_lines}")
+            return random.choice(remaining_lines)
+        elif even_triangle_lines:
+            print(f"even_triangle_lines -> {even_triangle_lines}")
+            return random.choice(even_triangle_lines)
+        elif available_lines:
+            print(f"available_lines -> {available_lines}")
+            return random.choice(available_lines)  
         else:
-            if best_trick_line:
-                print(f"best_trick_line -> {best_trick_line}")
-                return random.choice(best_trick_line)
-            elif remaining_lines:
-                print(f"remaining_lines -> {remaining_lines}")
-                return random.choice(remaining_lines)
-            elif even_triangle_lines:
-                print(f"even_triangle_lines -> {even_triangle_lines}")
-                return random.choice(even_triangle_lines)
-            else:
-                print(f"available -> {available}")
-                return random.choice(available) 
+            print(f"last_lines -> {last_lines}")
+            return random.choice(last_lines)
 
+              
+    #def obtained_score(self, before_lines, selected_line):
        
-    def find_triangle_completing_line(self):
+    def find_triangle_completing_lines(self):
         """
         삼각형을 완성하는 선분을 찾는 함수. 한 번에 두 개 이상의 삼각형을 완성할 수 있는 경우를 고려한다.
         """
-        best_line = None
-        max_triangles_formed = 0
-
+        max_score = 0 
+        complete_lines = []
         for line in self.check_all_lines():
-            if self.check_availability(line):
-                # 새로운 선을 추가했을 때 삼각형의 개수를 계산
-                new_drawn_lines = self.drawn_lines + [line]
-                triangles_formed = self.check_triangle_number(new_drawn_lines, self.whole_points)
+            print(f"line -> {line}")
+            my_score = self.obtained_score(self.drawn_lines, line)
+            print(f"my_score -> {my_score}")
+            if my_score > 0:
+                if my_score > max_score:
+                    complete_lines = []
+                    complete_lines.append(line)
+                elif my_score == max_score:
+                    complete_lines.append(line)
+        return complete_lines
 
-                if triangles_formed > max_triangles_formed:
-                    best_line = line
-                    max_triangles_formed = triangles_formed
-
-        return [best_line] if best_line else None
+    
+    def find_completing_line(self, triangle):
+        """
+        삼각형을 완성할 수 있는 선분을 찾는 함수
+        """
+        for line in combinations(triangle, 2):
+            if line not in self.drawn_lines and self.check_availability(line):
+                return line
+        return None  
     
     # 삼각형의 개수
     def check_triangle_number(self, drawn_lines, whole_points):
@@ -258,25 +238,16 @@ class MACHINE():
         # '안에 점이 없는 삼각형'의 개수
         triangle_number = len(empty_triangles)
         return triangle_number
-
-    def find_completing_line(self, triangle):
-        """
-        삼각형을 완성할 수 있는 선분을 찾는 함수
-        """
-        for line in combinations(triangle, 2):
-            if line not in self.drawn_lines and self.check_availability(line):
-                return line
-        return None  
         
     def check_all_lines(self):
-        print("this is check_all_lines========================================")
+        #print("this is check_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
         return available
         # 조건에 부합하는 모든 가능한 라인을 반환
 
     def sim_check_all_lines(self):  #그냥 모든 라인을 반환
         empty = []
-        print("this is sim_chek_all_lines========================================")
+        #print("this is sim_chek_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.sim_check_availability([point1, point2], empty)]
         return available
 
@@ -320,7 +291,7 @@ class MACHINE():
 
     # count_avail_lines를 성공적으로 반환함 #len(remaind_available_lines)-> 남은 그릴 수 있는 선 수
     def remaind_available_lines(self, drawn_lines):
-        print("this is remaind_available_lines========================================")
+        #("this is remaind_available_lines========================================")
         #board판과 whole_points정보를 토대로 게임을 시뮬레이션을 돌려서 그려질 수 있는 라인수를 반환
         # sim_drawnline 과 sim_check_availability으로 끝까지 simulation해보고 라인을 반환
         if self.avail_lines_num ==0 :   # machine의 가능한 라인수 초기화가 필요한 경우
@@ -358,8 +329,6 @@ class MACHINE():
                 continue
             elif bool(line_string.intersection(LineString(l))): # 교차한 경우 false
                 condition3 = False
-
-        
 
         # Must be a new line
         condition4 = (line not in sim_drawn_lines)
@@ -687,21 +656,6 @@ class Trick:
                     avail_trick_point.append(avail_candidate)
             
             update_trick_point = []
-            '''
-            # 트릭 중에서 그을 수 없는 선분이 생겼을 경우, 사용 가능한 트릭에서 제외 
-            for i in range(len(avail_trick_point)):
-                trick_line = list(combinations(avail_trick_point[i], 2))
-                for line in trick_line:
-                    if line not in self.drawn_lines:
-                        print(f"line -> {line}")
-                        if not self.check_availability(line):
-                            print(f"decision -> {self.check_availability(line)}")
-                            #avail_trick_point.pop(i)
-                            print(f"avail_trick_point -> {avail_trick_point}")
-                            update_trick_point = [trick for trick in avail_trick_point not in avail_trick_point[i]]
-                            print(f"update_trick_point -> {update_trick_point}")
-            avail_trick_point = update_trick_point
-            '''
 
             # 트릭 내부의 점과 트릭 외부의 점을 잇는 선분이 그어졌을 경우, 사용가능한 트릭에서 제외
             for i in range(len(avail_trick_point)):
@@ -803,7 +757,7 @@ class Trick:
             next_avail_line = [sorted(line) for line in total_line if line not in next_drawn_line]
             #print(f"next_avail_line -> {next_avail_line}")
             for other_draw in next_avail_line:
-                print(f"이번 other_draw -> {other_draw}")
+                #print(f"이번 other_draw -> {other_draw}")
                 other_score = self.obtained_score(next_drawn_line, other_draw)
                 my_score = self.obtained_score(self.drawn_lines, line)
                 #print(f"other_score -> {other_score}")
@@ -815,7 +769,7 @@ class Trick:
                     #print(f"제외한 후에 best_trick_line -> {best_trick_line}")
         return best_trick_line
     
-    def avoid_trick(self, selection_line):       
+    def is_line_is_trick(self, selection_line):       
         # 내가 획득할 점수
         my_turn_lines = [sorted(line) for line in self.drawn_lines]
         my_score = self.obtained_score(self.drawn_lines, selection_line)
@@ -828,7 +782,7 @@ class Trick:
         other_avail_lines = [sorted(line) for line in total_lines if line not in other_turn_lines]
         
         other_max_score = 0
-        for other_selection_line in other_avail_lines:
+        for other_selection_line in other_avail_lines:       
             other_score = self.obtained_score(other_turn_lines, other_selection_line)
             #print(f"other_score: {other_score} VS my_score: {my_score}")
             if other_score > other_max_score:
@@ -837,9 +791,22 @@ class Trick:
                         
         if my_score != 2 and other_max_score == 2:
             print("Wathch out! It is trick!!")
-            #print(f"my_score: {my_score} VS other_max_score: {other_max_score}")
-            #print(f"return -> {bool(1)}")
-            return bool(1)
+            print(f"my_score: {my_score} VS other_max_score: {other_max_score}")
+            print(f"other_selection_line -> {other_selection_line}")
+            return True
         else:
             #print(f"return -> {bool(0)}")
-            return bool(0)
+            return False
+        
+    def find_fatal_lines(self):
+        total_lines = list(combinations(self.whole_points, 2))
+        total_lines = [sorted(line) for line in total_lines]
+        avail_lines = [sorted(line) for line in total_lines if line not in self.drawn_lines]
+        
+        fatal_lines = []
+        for line in avail_lines:
+            trick_decision = Trick.is_line_is_trick(self, line)
+            if trick_decision == True:
+                fatal_lines.append(line)
+        return fatal_lines
+                
