@@ -6,7 +6,6 @@ from itertools import product, chain, combinations
 import copy  # for deepcopy
 
 
-
 class MACHINE():
     """
         [ MACHINE ]..
@@ -42,8 +41,6 @@ class MACHINE():
         self.drawn_lines_copy = copy.deepcopy(drawn_lines)
         self.whole_points_copy = copy.deepcopy(self.whole_points)
         #턴마다 system에서 machine의 변수들을 업데이트 해 주는 것임
-        
-
 
     def find_best_selection(self):
         # 0. 가능한 모든 선분
@@ -53,7 +50,7 @@ class MACHINE():
             empty = []
             self.avail_lines_num = len(self.remaind_available_lines(empty))
         
-        if self.can_make_triangle(available):# 두점으로 삼각형 되면 그거 return
+        if self.can_make_triangle(available):# available중에 삼각형 만들어지는 라인 있으면 그걸 return함
             return self.can_make_triangle(available)
 
         drawn_lines = self.drawn_lines
@@ -245,6 +242,7 @@ class MACHINE():
         return available
 
         # system.check_triangle이용, line이 추가되면 삼각형이 만들어지는 지 T/F 반환
+    
     def check_if_triangle(self, line):
         self.get_score = False
 
@@ -367,6 +365,7 @@ class MACHINE():
 
         # == 짝수개의 삼각형 ==
         # 짝수 개의 삼각형 전략을 사용하여 선분을 찾음
+    
     def find_even_triangle_strategy(self):
         for line in self.drawn_lines:
             connected_lines = self.find_connected_lines(line)
@@ -483,7 +482,7 @@ class Tree:
             self.score = None   #sim_score
             self.children = []  # 그릴 수 있는 선택지들
             self.parent = None
-            
+            self.sim_triangle = []  #현재 노드에서 그려진 삼각형들
 
         def add_child(self, child): #add_child(Node(이미 그려진 라인))
             child.parent = self
