@@ -33,8 +33,8 @@ class MACHINE():
         self.sim_triangles = []
         
         
-        print(self.remaind_available_lines(self.drawn_lines)) # system이 board 정보를 업데이트 하는 시점이 machine초기화 이후이기 때문에 시작 전에 미리 알 수 없을 것 같음
-        # count_available() -> len(remaind_available_lines())로 변환
+        print(self.remained_available_lines(self.drawn_lines)) # system이 board 정보를 업데이트 하는 시점이 machine초기화 이후이기 때문에 시작 전에 미리 알 수 없을 것 같음
+        # count_available() -> len(remained_available_lines())로 변환
         self.drawn_lines_copy = copy.deepcopy(self.drawn_lines)
         self.whole_points_copy = copy.deepcopy(self.whole_points)
         #턴마다 system에서 machine의 변수들을 업데이트 해 주는 것임
@@ -54,7 +54,7 @@ class MACHINE():
         # 첫 시작 : avail_lines_num이 업데이트 안되어 있을 경우 초기화
         if self.avail_lines_num == 0:
             empty = []
-            self.avail_lines_num = len(self.remaind_available_lines(empty))
+            self.avail_lines_num = len(self.remained_available_lines(empty))
         
 
         if self.can_make_triangle(available): # 두점으로 삼각형 되면 그거 return
@@ -65,7 +65,7 @@ class MACHINE():
 
         remaining_lines = [line for line in available if line not in drawn_lines and self.check_availability(line)] # 후공일 경우 남아있는 라인 업데이트
 
-        print(self.remaind_available_lines(drawn_lines= self.drawn_lines))  # 남은 가능한 라인들 반환
+        print(self.remained_available_lines(drawn_lines= self.drawn_lines))  # 남은 가능한 라인들 반환
         
         if not remaining_lines:#남은 라인이 아무것도 없는 상태
             # RootNode Random으로 설정?
@@ -144,11 +144,11 @@ class MACHINE():
         
         # 1. Trick 파는 전략      
         three = Trick.just_3(self)
-        triangle_point = Trick.find_triangle_point(self, three)
-        trick_point = Trick.find_trick_point(self, triangle_point)
-        avail_trick_point = Trick.validate_trick_point(self, trick_point)
-        most_completed_trick = Trick.find_most_completed_trick(self, avail_trick_point)
-        best_trick_line = Trick.complete_trick(self, most_completed_trick)
+        triangle_points = Trick.find_triangle_points(self, three)
+        trick_points = Trick.find_trick_points(self, triangle_points)
+        avail_trick_points = Trick.validate_trick_points(self, trick_points)
+        most_completed_tricks = Trick.find_most_completed_tricks(self, avail_trick_points)
+        best_trick_lines = Trick.complete_trick(self, most_completed_tricks)
         
                 
         # 2. 상대방에게 점수 안 주는 전략
@@ -156,7 +156,7 @@ class MACHINE():
         
         if self.avail_lines_num == 0:
             empty = []
-            self.avail_lines_num = len(self.remaind_available_lines(empty))
+            self.avail_lines_num = len(self.remained_available_lines(empty))
         drawn_lines = self.drawn_lines
         # 이미 그어진 선분의 모든 좌표를 얻기
         drawn_points = [point for line in drawn_lines for point in line]
@@ -164,9 +164,9 @@ class MACHINE():
         remaining_lines = [[point1, point2] for [point1, point2] in available_lines if point1 not in drawn_points and point2 not in drawn_points]
         
         # 3. 삼각형 완성 전략
-        triangle_completing_line = self.find_triangle_completing_lines()
-        triangle_completing_line = [sorted(line) for line in triangle_completing_line] 
-        triangle_completing_line = [line for line in triangle_completing_line if line not in fatal_lines]
+        triangle_completing_lines = self.find_triangle_completing_liness()
+        triangle_completing_lines = [sorted(line) for line in triangle_completing_lines] 
+        triangle_completing_lines = [line for line in triangle_completing_lines if line not in fatal_lines]
          
         # 4. 짝수 삼각형 전략
         even_triangle_lines = [line for line in available_lines if self.can_form_even_number_of_triangles_after_drawing_line(line)]
@@ -175,12 +175,12 @@ class MACHINE():
         
 
         # 규칙 기반 결정 과정
-        if triangle_completing_line:
-            print(f"triangle_completing_line -> {triangle_completing_line}")
-            return random.choice(triangle_completing_line)       
-        elif best_trick_line:
-            print(f"best_trick_line -> {best_trick_line}")
-            return random.choice(best_trick_line)
+        if triangle_completing_lines:
+            print(f"triangle_completing_lines -> {triangle_completing_lines}")
+            return random.choice(triangle_completing_lines)       
+        elif best_trick_lines:
+            print(f"best_trick_lines -> {best_trick_lines}")
+            return random.choice(best_trick_lines)
         elif remaining_lines:
             print(f"remaining_lines -> {remaining_lines}")
             return random.choice(remaining_lines)
@@ -195,7 +195,7 @@ class MACHINE():
             return random.choice(last_lines)
 
 
-    def find_triangle_completing_lines(self):
+    def find_triangle_completing_liness(self):
         """
         삼각형을 완성하는 선분을 찾는 함수. 한 번에 두 개 이상의 삼각형을 완성할 수 있는 경우를 고려한다.
         """
@@ -296,9 +296,9 @@ class MACHINE():
                 else:
                     return False
 
-    # count_avail_lines를 성공적으로 반환함 #len(remaind_available_lines)-> 남은 그릴 수 있는 선 수
-    def remaind_available_lines(self, drawn_lines):
-        #("this is remaind_available_lines========================================")
+    # count_avail_lines를 성공적으로 반환함 #len(remained_available_lines)-> 남은 그릴 수 있는 선 수
+    def remained_available_lines(self, drawn_lines):
+        #("this is remained_available_lines========================================")
         #board판과 whole_points정보를 토대로 게임을 시뮬레이션을 돌려서 그려질 수 있는 라인수를 반환
         # sim_drawnline 과 sim_check_availability으로 끝까지 simulation해보고 라인을 반환
         if self.avail_lines_num ==0 :   # machine의 가능한 라인수 초기화가 필요한 경우
@@ -519,9 +519,9 @@ class Trick:
         area_val = 0.5 * abs(p1[0]*p2[1] + p2[0]*p3[1] + p3[0]*p1[1] - p1[0]*p3[1] - p3[0]*p2[1] - p2[0]*p1[1])
         return area_val
     
-    # find triangle_point
-    def find_triangle_point(self, three):
-        triangle_point = []
+    # find triangle_points
+    def find_triangle_points(self, three):
+        triangle_points = []
         for p in three:
             p_set = list(p)
             p1, p2, p3 = p_set[0], p_set[1], p_set[2]
@@ -537,13 +537,13 @@ class Trick:
                         is_point_on_line = True
                         break
                 if not is_point_on_line:
-                    triangle_point.append(p_set)
-        return triangle_point
+                    triangle_points.append(p_set)
+        return triangle_points
         
-    # find trick_point
-    def find_trick_point(self, triangle_point):
-        trick_point = []
-        for i, p in enumerate(triangle_point): # 삼각형 안에 점이 1개 들어가면 trick_point에 저장
+    # find trick_points
+    def find_trick_points(self, triangle_points):
+        trick_points = []
+        for i, p in enumerate(triangle_points): # 삼각형 안에 점이 1개 들어가면 trick_points에 저장
             inside_num = 0
             for q in self.whole_points: #
                 if q not in p:
@@ -553,100 +553,93 @@ class Trick:
             if inside_num == 1:
                 p = list(p)
                 p.append(inside_point)
-                trick_point.append(p)
-        return trick_point  
+                trick_points.append(p)
+        return trick_points        
             
-    # find trick_line
-    def find_trick_line(self, trick_point):
-        trick_line = []
-        for p in trick_point:
-            trick_line.append(list(combinations(p, 2)))
-        return trick_line  
+    # validate trick_points
+    def validate_trick_points(self, trick_points):
+        avail_trick_points = []
+        for j in range(0,len(trick_points)): # 유효한 trick만 avail_trick_points에 저장: trick이 깨졌거나 trick에 걸리는 상황은 제외
+            out_point = list(trick_points[j][0:3])
+            total_lines = list(combinations(trick_points, 2))
+            out_lines = list(combinations(out_point,2))
+            in_lines = [i for i in total_lines if i not in out_lines]
         
-    # validate trick_point
-    def validate_trick_point(self, trick_point):
-        avail_trick_point = []
-        for j in range(0,len(trick_point)): # 유효한 trick만 avail_trick_point에 저장: trick이 깨졌거나 trick에 걸리는 상황은 제외
-            out_point = list(trick_point[j][0:3])
-            total_line = list(combinations(trick_point, 2))
-            out_line = list(combinations(out_point,2))
-            in_line = [i for i in total_line if i not in out_line]
-        
-            out_drawen_check = [line in self.drawn_lines for line in out_line]
-            in_drawen_check = [line in self.drawn_lines for line in in_line]
+            out_drawen_check = [line in self.drawn_lines for line in out_lines]
+            in_drawen_check = [line in self.drawn_lines for line in in_lines]
             out_count = sum(out_drawen_check)
             in_count = sum(in_drawen_check)
         
-            avail_candidate = list(trick_point[j])
+            avail_candidate = list(trick_points[j])
             
             #def is_point_connected(self, point):
         
             if out_count == 3:
                 if in_count == 0 or in_count == 2: # out_count가 3일 때, in_count는 0 또는 2인 경우에 추가
-                    avail_trick_point.append(avail_candidate)
+                    avail_trick_points.append(avail_candidate)
             else:
                 if in_count == 0: # out_count가 3이 아닐 때, in_count는 0인 경우에만 추가
-                    avail_trick_point.append(avail_candidate)
+                    avail_trick_points.append(avail_candidate)
             
-            update_trick_point = []
+            update_trick_points = []
 
             # 트릭 내부의 점과 트릭 외부의 점을 잇는 선분이 그어졌을 경우, 사용 가능한 트릭에서 제외
-            for i in range(len(avail_trick_point)):
-                connected_line = self.is_point_connected(avail_trick_point[i][3])
-                trick_line = list(combinations(avail_trick_point[i], 2))
-                trick_out_line = list(combinations(avail_trick_point[i][0:3],2))
-                trick_in_line = [line for line in trick_line if line not in trick_out_line]
+            for i in range(len(avail_trick_points)):
+                connected_line = self.is_point_connected(avail_trick_points[i][3])
+                trick_line = list(combinations(avail_trick_points[i], 2))
+                trick_out_lines = list(combinations(avail_trick_points[i][0:3],2))
+                trick_in_lines = [line for line in trick_line if line not in trick_out_lines]
           
                 arranged_connected = [sorted(line) for line in connected_line]
-                arranged_trick_in = [sorted(line) for line in trick_in_line]
+                arranged_trick_in = [sorted(line) for line in trick_in_lines]
                 critical_line = [sorted(line) for line in arranged_connected if line not in arranged_trick_in]
                 if len(critical_line) > 0:
-                    avail_trick_point.pop(i)                               
-        return avail_trick_point
+                    avail_trick_points.pop(i)                               
+        return avail_trick_points
 
 
-    # find most_completed_trick
-    def find_most_completed_trick(self, avail_trick_point: list) -> list:
-        most_completed_trick = []
+    # find most_completed_tricks
+    def find_most_completed_tricks(self, avail_trick_points: list) -> list:
+        most_completed_tricks = []
         max_out_count = -1
         max_in_count = -1
         trick_candidate = []
-        for j in range(0,len(avail_trick_point)):
-            total_line = [sorted(line) for line in combinations(avail_trick_point[j], 2)]
-            out_line = [sorted(line) for line in combinations(avail_trick_point[j][0:3], 2)]
-            in_line = [line for line in total_line if line not in out_line]
+        for j in range(0,len(avail_trick_points)):
+            total_lines = [sorted(line) for line in combinations(avail_trick_points[j], 2)]
+            out_lines = [sorted(line) for line in combinations(avail_trick_points[j][0:3], 2)]
+            in_lines = [line for line in total_lines if line not in out_lines]
             
-            already_line = [sorted(line) for line in self.drawn_lines]
-            in_check = [line in already_line for line in in_line]
-            out_check = [line in already_line for line in out_line]
+            already_lines = [sorted(line) for line in self.drawn_lines]
+            in_check = [line in already_lines for line in in_lines]
+            out_check = [line in already_lines for line in out_lines]
             in_count = sum(in_check)
             out_count = sum(out_check)
 
             if out_count == 3:
                 if in_count > max_in_count:
                     max_in_count = in_count
-                    most_completed_trick = [avail_trick_point[j]]
+                    most_completed_tricks = [avail_trick_points[j]]
                 elif in_count == max_in_count:
-                    most_completed_trick = [avail_trick_point[j]]                   
+                    most_completed_tricks = [avail_trick_points[j]]                   
             elif max_in_count == -1:
                 if out_count > max_out_count:
                     max_out_count = out_count
-                    most_completed_trick = [avail_trick_point[j]]
+                    most_completed_tricks = [avail_trick_points[j]]
                 elif out_count == max_out_count:
-                    most_completed_trick.append(avail_trick_point[j])                
-        return most_completed_trick
+                    most_completed_tricks.append(avail_trick_points[j])                
+        return most_completed_tricks
 
-    def complete_trick(self, most_completed_trick):
-        best_trick_line = []
+    def complete_trick(self, most_completed_tricks):
+        best_trick_lines = []
         # 하위 리스트를 허물어 저장할 새로운 리스트 생성
-        flattened_best_trick_line = []
-        for i in range(len(most_completed_trick)):
-            total_line = [sorted(line) for line in combinations(most_completed_trick[i], 2)]
-            out_line = [sorted(line) for line in list(combinations(most_completed_trick[i][0:3], 2))]
-            in_line = [sorted(line) for line in total_line if line not in out_line]        
-            already_line = [sorted(line) for line in self.drawn_lines]
-            in_check = [line in already_line for line in in_line]
-            out_check = [line in already_line for line in out_line]
+        flattened_best_trick_lines = []
+        for i in range(len(most_completed_tricks)):
+            total_lines = [sorted(line) for line in combinations(most_completed_tricks[i], 2)]
+            out_lines = [sorted(line) for line in list(combinations(most_completed_tricks[i][0:3], 2))]
+            in_lines = [sorted(line) for line in total_lines if line not in out_lines]        
+            already_lines = [sorted(line) for line in self.drawn_lines]
+            in_check = [line in already_lines for line in in_lines]
+            out_check = [line in already_lines for line in out_lines]
             in_count = sum(in_check)
             out_count = sum(out_check)
             
@@ -655,15 +648,15 @@ class Trick:
                 if in_count == 3 or in_count == 1:
                     pass
                 else:
-                    best_trick_line = [c for c in in_line if c not in self.drawn_lines]
-                    best_trick_line = [line for line in best_trick_line if self.check_availability(line)]
+                    best_trick_lines = [c for c in in_lines if c not in self.drawn_lines]
+                    best_trick_lines = [line for line in best_trick_lines if self.check_availability(line)]
                     
             else:
                 if in_count == 0:
-                    best_trick_line = [c for c in out_line if c not in self.drawn_lines]
-                    best_trick_line = [line for line in best_trick_line if self.check_availability(line)]
-                    best_trick_line = [sorted(line) for line in best_trick_line if not Trick.is_line_is_fatal(self, line, 1, 1)]
-        return best_trick_line
+                    best_trick_lines = [c for c in out_lines if c not in self.drawn_lines]
+                    best_trick_lines = [line for line in best_trick_lines if self.check_availability(line)]
+                    best_trick_lines = [sorted(line) for line in best_trick_lines if not Trick.is_line_is_fatal(self, line, 1, 1)]
+        return best_trick_lines
     
     # 해당 선분이 트릭에 걸리는 선인지 확인하는 함수
     def is_line_is_fatal(self, selection_line, my_score_condition, other_score_limit):       
@@ -680,10 +673,10 @@ class Trick:
         #print(f"other_turn_lines -> {other_turn_lines}")
         #print(f"my_turn_lines -> {my_turn_lines}")
         
-        total_lines = list(combinations(self.whole_points, 2)) ; total_lines = [sorted(line) for line in total_lines] # 맵에서 그을 수 있는 모든 선분
-        other_avail_lines = [sorted(line) for line in total_lines if line not in other_turn_lines]
+        total_liness = list(combinations(self.whole_points, 2)) ; total_liness = [sorted(line) for line in total_liness] # 맵에서 그을 수 있는 모든 선분
+        other_avail_lines = [sorted(line) for line in total_liness if line not in other_turn_lines]
         other_avail_lines = [sorted(line) for line in other_avail_lines if self.check_availability(line)]
-        #print(f"total_lines -> {total_lines}")
+        #print(f"total_liness -> {total_liness}")
         
         other_max_score = 0
         for other_selection_line in other_avail_lines:       
@@ -705,9 +698,9 @@ class Trick:
        
     # 트릭에 걸리는 선들을 반환하는 함수
     def find_fatal_lines(self, my_score_condition, other_score_limit):
-        total_lines = list(combinations(self.whole_points, 2))
-        total_lines = [sorted(line) for line in total_lines]
-        avail_lines = [sorted(line) for line in total_lines if line not in self.drawn_lines]
+        total_liness = list(combinations(self.whole_points, 2))
+        total_liness = [sorted(line) for line in total_liness]
+        avail_lines = [sorted(line) for line in total_liness if line not in self.drawn_lines]
         avail_lines = [sorted(line) for line in avail_lines if self.check_availability(line)]
         
         fatal_lines = []
