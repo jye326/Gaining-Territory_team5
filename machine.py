@@ -223,29 +223,7 @@ class MACHINE():
             if line not in self.drawn_lines and self.check_availability(line):
                 return line
         return None  
-    
-    # 삼각형의 개수
-    def check_triangle_number(self, drawn_lines, whole_points):
-        triangles = []
-        for combination in combinations(drawn_lines, 3):
-            points = set(sum(combination, []))  # 선분들의 점들을 모두 합친다.
-            if len(points) == 3:  # 점이 3개면 삼각형입니다.
-                triangles.append(points)
-        
-        # 각 삼각형이 다른 점을 포함하지 않는지 확인
-        empty_triangles = []
-        for triangle in triangles:
-            polygon = Polygon(triangle)
-            for point in whole_points:
-                if polygon.contains(Point(point)) and point not in triangle:  # 삼각형의 안에 점이 있고, 그 점이 삼각형의 꼭짓점이 아니면
-                    break  # 이 삼각형은 비어있지 않습니다.
-            else:  # for loop가 break 없이 끝나면, 이 삼각형은 안에 점이 없음을 의미한다.
-                empty_triangles.append(triangle)
-        
-        # '안에 점이 없는 삼각형'의 개수
-        triangle_number = len(empty_triangles)
-        return triangle_number
-        
+      
     def check_all_lines(self):
         #print("this is check_all_lines========================================")
         available = [[point1, point2] for (point1, point2) in list(combinations(self.whole_points, 2)) if self.check_availability([point1, point2])]
