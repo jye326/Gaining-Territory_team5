@@ -3,7 +3,6 @@ import copy  # for deepcopy
 from shapely.geometry import LineString, Point, Polygon
 from itertools import product, chain, combinations
 
-
 class MACHINE():
     """
         [ MACHINE ]..
