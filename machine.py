@@ -3,7 +3,6 @@ import copy  # for deepcopy
 from shapely.geometry import LineString, Point, Polygon
 from itertools import product, chain, combinations
 
-
 class MACHINE():
     """
         [ MACHINE ]..
@@ -164,7 +163,7 @@ class MACHINE():
         remaining_lines = [[point1, point2] for [point1, point2] in available_lines if point1 not in drawn_points and point2 not in drawn_points]
         
         # 3. 삼각형 완성 전략
-        triangle_completing_lines = self.find_triangle_completing_liness()
+        triangle_completing_lines = self.find_triangle_completing_lines()
         triangle_completing_lines = [sorted(line) for line in triangle_completing_lines] 
         triangle_completing_lines = [line for line in triangle_completing_lines if line not in fatal_lines]
          
@@ -195,7 +194,7 @@ class MACHINE():
             return random.choice(last_lines)
 
 
-    def find_triangle_completing_liness(self):
+    def find_triangle_completing_lines(self):
         """
         삼각형을 완성하는 선분을 찾는 함수. 한 번에 두 개 이상의 삼각형을 완성할 수 있는 경우를 고려한다.
         """
@@ -798,8 +797,6 @@ class Tree:
                 return True
             else:
                 return False
-        
-
 
     def __init__(self, drawn_lines, max_lines_num): #tree class 만들기
         self.root = self.Node(sim_drawn_lines = drawn_lines)
